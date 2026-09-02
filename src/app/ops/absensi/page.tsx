@@ -514,7 +514,8 @@ export default function AbsensiPage() {
                       </div>
                     </div>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             </SectionCard>
           )}

@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { PageHeader, SectionCard, StatusBadge, EmptyState, formatDateTime, Pagination } from '../ops-ui';
 import { useToast } from '@/hooks/use-toast';
+import { useSubmitLock } from '@/hooks/use-submit-lock';
 
 const ACTIVITY_STATUS = [
   { value: 'selesai', label: 'Selesai', color: 'bg-emerald-500' },
@@ -55,6 +56,7 @@ export default function KegiatanPage() {
   const [taskId, setTaskId] = useState('');
   const [photo, setPhoto] = useState<string>('');
   const [page, setPage] = useState(1);
+  const { locked, run } = useSubmitLock();
   const PAGE_SIZE = 8;
 
   const decorList = useMemo(() => decors.filter((d) => d.status !== 'dibatalkan'), [decors]);
@@ -87,28 +89,24 @@ export default function KegiatanPage() {
     reader.readAsDataURL(file);
   };
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!decorId) return;
-    if (!description.trim()) return;
-    const act = addActivity({
-      decorId,
-      userId: state.currentUserId,
-      taskId: taskId || undefined,
-      activityType: type || 'Lainnya',
-      description: description.trim(),
-      status,
-      note: note.trim() || undefined,
+    if (!decorId || !description.trim()) return;
+    await run(async () => {
+      const act = addActivity({
+        decorId,
+        userId: state.currentUserId,
+        taskId: taskId || undefined,
+        activityType: type || 'Lainnya',
+        description: description.trim(),
+        status,
+        note: note.trim() || undefined,
+      });
+      if (photo) addPhoto({ decorId, userId: state.currentUserId, dataUrl: photo, caption: description.trim() });
+      toast({ title: 'Kegiatan tercatat' });
+      setDescription(''); setNote(''); setPhoto(''); setTaskId('');
+      void act;
     });
-    if (photo) {
-      addPhoto({ decorId, userId: state.currentUserId, dataUrl: photo, caption: description.trim() });
-    }
-    toast({ title: 'Kegiatan tercatat' });
-    setDescription('');
-    setNote('');
-    setPhoto('');
-    setTaskId('');
-    void act;
   };
 
   return (
@@ -214,7 +212,7 @@ export default function KegiatanPage() {
 
                 <div className="flex items-center justify-between">
                   <span className="flex items-center gap-1 text-[10px] text-slate-400"><Clock4 size={11} /> Waktu otomatis: sekarang</span>
-                  <Button type="submit" className="bg-navy hover:bg-gold text-white"><Camera size={14} className="mr-1" /> Simpan Kegiatan</Button>
+                  <Button type="submit" disabled={locked} className="bg-navy hover:bg-gold text-white"><Camera size={14} className="mr-1" /> {locked ? 'Menyimpan...' : 'Simpan Kegiatan'}</Button>
                 </div>
               </form>
             )}

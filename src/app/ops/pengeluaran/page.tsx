@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dialog';
 import { PageHeader, SectionCard, StatCard, EmptyState, Pagination } from '../ops-ui';
 import { useToast } from '@/hooks/use-toast';
+import { useSubmitLock } from '@/hooks/use-submit-lock';
 
 const PIE_COLORS = ['#0B2447', '#8C7216', '#C5A358', '#19376D', '#475569', '#94a3b8', '#f59e0b', '#10b981'];
 
@@ -45,25 +46,17 @@ function ExpenseForm({
   const [amount, setAmount] = useState(initial ? String(initial.amount) : '');
   const [decorId, setDecorId] = useState(initial?.decorId || 'none');
   const [date, setDate] = useState(initial?.date || new Date().toISOString().slice(0, 10));
+  const { locked, run } = useSubmitLock();
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!description.trim() || !amount) return;
-    const data = {
-      description: description.trim(),
-      category,
-      amount: Number(amount.replace(/[^0-9]/g, '')),
-      decorId: decorId === 'none' ? undefined : decorId,
-      date,
-    };
-    if (initial) {
-      updateExpense(initial.id, data);
-      toast({ title: 'Pengeluaran diperbarui' });
-    } else {
-      addExpense(data);
-      toast({ title: 'Pengeluaran ditambahkan' });
-    }
-    onClose();
+    await run(() => {
+      const data = { description: description.trim(), category, amount: Number(amount.replace(/[^0-9]/g, '')), decorId: decorId === 'none' ? undefined : decorId, date };
+      if (initial) { updateExpense(initial.id, data); toast({ title: 'Pengeluaran diperbarui' }); }
+      else { addExpense(data); toast({ title: 'Pengeluaran ditambahkan' }); }
+      onClose();
+    });
   };
 
   return (
@@ -103,7 +96,7 @@ function ExpenseForm({
       </div>
       <DialogFooter className="gap-2 pt-2">
         <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
-        <Button type="submit" className="bg-navy hover:bg-gold text-white">{initial ? 'Simpan' : 'Tambah'}</Button>
+        <Button type="submit" disabled={locked} className="bg-navy hover:bg-gold text-white">{locked ? 'Menyimpan...' : initial ? 'Simpan' : 'Tambah'}</Button>
       </DialogFooter>
     </form>
   );
