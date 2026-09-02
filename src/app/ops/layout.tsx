@@ -4,13 +4,12 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { opsAuthed, opsLogout } from '@/lib/ops/auth';
-import { RotateCcw, LogOut, HelpCircle, MoreHorizontal } from 'lucide-react';
+import { RotateCcw, LogOut, HelpCircle, MoreHorizontal, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { OpsProvider, useOps } from '@/lib/ops/store';
 import { DECOR_STATUS_COLOR } from '@/lib/ops/types';
 import {
   FREELANCER_NAV, MANAGER_NAV, OWNER_NAV, SECONDARY_NAV,
-  FREELANCER_ROUTES, MANAGER_ROUTES, OWNER_ROUTES,
   isActivePath, isAllowedRoute,
 } from './navigation';
 import {
@@ -189,10 +188,11 @@ function Shell({ children }: { children: React.ReactNode }) {
   const title = allNav.find((n) => isActivePath(pathname, n.href))?.label || 'Dasbor';
 
   // Route guards
-  const freelancerRoutes = ['/ops', '/ops/decor', '/ops/todo', '/ops/absensi', '/ops/dokumentasi', '/ops/kegiatan'];
-  const managerRoutes = [...freelancerRoutes, '/ops/analisa', '/ops/laporan', '/ops/pengeluaran'];
-  const ownerRoutes = [...managerRoutes, '/ops/pengaturan'];
-  const allowedRoutes = isOwner ? ownerRoutes : isManager ? managerRoutes : freelancerRoutes;
+  const allowedRoutes = isOwner
+    ? ['/ops', '/ops/decor', '/ops/todo', '/ops/absensi', '/ops/dokumentasi', '/ops/kegiatan', '/ops/analisa', '/ops/laporan', '/ops/pengeluaran', '/ops/pengaturan']
+    : isManager
+      ? ['/ops', '/ops/decor', '/ops/todo', '/ops/absensi', '/ops/dokumentasi', '/ops/kegiatan', '/ops/analisa', '/ops/laporan', '/ops/pengeluaran']
+      : ['/ops', '/ops/decor', '/ops/todo', '/ops/absensi', '/ops/dokumentasi', '/ops/kegiatan'];
 
   useEffect(() => {
     const allowed = isAllowedRoute(pathname, allowedRoutes);
