@@ -79,22 +79,7 @@ export default function AbsensiPage() {
   const month = date.slice(0, 7);
 
   // dialogs
-  const [showCheckin, setShowCheckin] = useState(false);
   const [showNoWork, setShowNoWork] = useState(false);
-  const [showCorrection, setShowCorrection] = useState(false);
-
-  // absen masuk state
-  const [decorId, setDecorId] = useState('');
-  const [note, setNote] = useState('');
-  const [agree, setAgree] = useState(false);
-  const [locStatus, setLocStatus] = useState<'idle' | 'ok' | 'fail'>('idle');
-  const [locLabel, setLocLabel] = useState('');
-
-  // koreksi state
-  const [corrIn, setCorrIn] = useState('');
-  const [corrOut, setCorrOut] = useState('');
-  const [corrReason, setCorrReason] = useState('');
-  const [corrDetail, setCorrDetail] = useState('');
   const [auditPage, setAuditPage] = useState(1);
   const AUDIT_PAGE_SIZE = 10;
 
@@ -233,12 +218,17 @@ export default function AbsensiPage() {
         title="Absensi"
         subtitle="Self-report: tidak wajib, tapi setiap data harus jujur & bisa dipertanggungjawabkan"
         action={
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="h-9 rounded-lg border border-slate-200 px-3 text-sm bg-white"
-          />
+          isOwner ? (
+            <input
+              type="date"
+              value={date}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={(e) => setDate(e.target.value)}
+              className="h-9 rounded-lg border border-slate-200 px-3 text-sm bg-white"
+            />
+          ) : (
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Hari Ini</span>
+          )
         }
       />
 
@@ -283,80 +273,69 @@ export default function AbsensiPage() {
               </div>
             </SectionCard>
           ) : (<>
-          <SectionCard title="Status Kamu">
+          <SectionCard title="Absensi Hari Ini">
             {!isToday ? (
-              <div className="text-sm text-slate-500 rounded-xl bg-slate-50 p-4">
-                <CalendarCheck size={18} className="text-slate-300 mb-2" />
-                Kamu hanya bisa <b>mengisi</b> absensi untuk tanggal hari ini.
-                <div className="mt-2 text-xs text-slate-400">Tampilan ini memakai data tanggal {date}.</div>
+              <div className="text-sm text-slate-500 rounded-xl bg-slate-50 p-4 text-center">
+                <CalendarCheck size={18} className="text-slate-300 mb-2 mx-auto" />
+                Absensi hanya bisa dilakukan untuk <b>hari ini</b>.
               </div>
             ) : !my ? (
               <div className="space-y-3">
-                <p className="text-sm text-slate-500">Belum ada absensi hari ini. Jika kamu bekerja, catat sekarang.</p>
-                <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-11" onClick={() => setShowCheckin(true)}>
-                  <LogIn size={16} /> Absen Masuk
+                <p className="text-sm text-slate-500 text-center">Pencet tombol di bawah untuk catat kehadiran.</p>
+                <Button
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-14 text-base font-bold"
+                  onClick={() => {
+                    const rec = clockIn(currentUser.id, date, selectedDecor?.id || undefined, undefined, opsDevice());
+                    if (rec) {
+                      toast({ title: 'Hadir tercatat', description: `${rec.checkIn} WIB` });
+                    }
+                  }}
+                >
+                  <LogIn size={18} className="mr-2" /> Hadir
                 </Button>
                 <Button variant="outline" className="w-full h-10 text-slate-500" onClick={() => setShowNoWork(true)}>
                   <UserX size={15} /> Tidak Bekerja Hari Ini
                 </Button>
-                <p className="text-[10px] text-slate-400 leading-relaxed">
-                  Memilih "tidak bekerja" artinya kamu tidak membuat absensi fiktif. Owner tetap bisa melihat siapa yang tidak mengisi.
-                </p>
               </div>
             ) : my.status === 'hadir' ? (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-                <div className="flex items-center gap-2 text-emerald-700 font-bold text-sm uppercase tracking-widest">
-                  <ShieldCheck size={15} /> Sedang Bekerja
+              <div className="space-y-3">
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center">
+                  <p className="text-emerald-700 font-bold text-sm uppercase tracking-widest">Sedang Bekerja</p>
+                  <p className="text-xs text-slate-500 mt-1">Masuk {my.checkIn} WIB · {decorName(my.decorId)}</p>
                 </div>
-                <p className="text-sm font-bold text-navy mt-2">{decorName(my.decorId)}</p>
-                <p className="text-[11px] text-slate-500">Masuk {my.checkIn} WIB · server-time, tidak bisa diubah</p>
-                {myDelivered && <p className="text-[11px] text-slate-500 mt-1">“{myDelivered}”</p>}
-                <div className="flex gap-2 mt-4">
-                  <Button className="flex-1 h-10 bg-sky-600 hover:bg-sky-700 text-white" onClick={() => { clockOut(currentUser.id, date); toast({ title: 'Absen pulang tercatat' }); }}>
-                    <LogOut size={15} /> Absen Pulang
-                  </Button>
-                  <Button variant="outline" size="sm" className="text-slate-500" onClick={() => setShowCorrection(true)}>Koreksi</Button>
-                </div>
-              </div>
-            ) : my.status === 'selesai' ? (
-              <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
-                <div className="flex items-center gap-2 text-sky-700 font-bold text-sm uppercase tracking-widest">
-                  <CheckCircle2 size={15} /> Selesai Bekerja
-                </div>
-                <div className="mt-2 text-sm text-slate-600 space-y-1">
-                  <p><b>Masuk:</b> {my.checkIn} <b>Keluar:</b> {my.checkOut}</p>
-                  {myDuration > 0 && <p className="text-xs text-slate-500">Durasi {formatDuration(myDuration).label}</p>}
-                  <p className="text-xs text-slate-500">Decor: {decorName(my.decorId)}</p>
-                </div>
-                <Button variant="outline" size="sm" className="mt-3 text-slate-500" onClick={() => setShowCorrection(true)}>
-                  <FileWarning size={14} /> Ajukan Koreksi
+                <Button
+                  className="w-full bg-sky-600 hover:bg-sky-700 text-white h-14 text-base font-bold"
+                  onClick={() => { clockOut(currentUser.id, date); toast({ title: 'Selesai tercatat' }); }}
+                >
+                  <LogOut size={18} className="mr-2" /> Selesai
                 </Button>
               </div>
-            ) : (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <div className="flex items-center gap-2 text-slate-600 font-bold text-sm uppercase tracking-widest">
-                  <UserX size={15} /> Tidak Bekerja Hari Ini
+            ) : my.status === 'selesai' ? (
+              <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 text-center">
+                <p className="text-sky-700 font-bold text-sm uppercase tracking-widest">Selesai Bekerja</p>
+                <div className="mt-2 text-sm text-slate-600">
+                  <p><b>Masuk:</b> {my.checkIn} · <b>Keluar:</b> {my.checkOut}</p>
+                  {myDuration > 0 && <p className="text-xs text-slate-500 mt-1">Durasi {formatDuration(myDuration).label}</p>}
                 </div>
-                <p className="text-xs text-slate-400 mt-1">Pernyataan: {myDelivered || 'Hari ini tidak bekerja.'}</p>
-                <div className="flex gap-2 mt-4">
-                  <Button size="sm" className="bg-navy text-white" onClick={() => { deleteSession(currentUser.id, date); setShowCheckin(true); }}>
-                    <RotateCcw size={13} /> Ubah → Absen Masuk
+                <p className="text-[10px] text-slate-400 mt-2">Data sudah tercatat.</p>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
+                <p className="text-slate-600 font-bold text-sm uppercase tracking-widest">Tidak Bekerja Hari Ini</p>
+                <div className="flex gap-2 mt-4 justify-center">
+                  <Button size="sm" className="bg-navy text-white" onClick={() => { deleteSession(currentUser.id, date); }}>
+                    <RotateCcw size={13} /> Ubah ke Hadir
                   </Button>
                 </div>
               </div>
             )}
           </SectionCard>
 
-          <SectionCard title="Sesi & Perangkat">
+          <SectionCard title="Info">
             <ul className="space-y-2 text-[11px] text-slate-500">
               <li className="flex justify-between"><span className="text-slate-400">Perangkat</span><span className="font-semibold text-navy">{opsDevice()}</span></li>
-              <li className="flex justify-between"><span className="text-slate-400">Server time</span><span className="font-semibold text-navy">{new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</span></li>
-              <li className="flex justify-between"><span className="text-slate-400">Login terakhir</span><span className="font-semibold text-navy">{opsLastLogin() ? formatDateTime(opsLastLogin()!) : '—'}</span></li>
-              <li className="flex justify-between"><span className="text-slate-400">Session</span><span className="font-semibold text-navy">1 sesi / hari</span></li>
+              <li className="flex justify-between"><span className="text-slate-400">Waktu server</span><span className="font-semibold text-navy">{new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</span></li>
             </ul>
-            <p className="text-[9px] text-slate-400 mt-3 leading-relaxed">
-              Prinsip BLUDECOR: kami tidak memaksa kamu absen. Tetapi setiap data yang kamu masukkan harus dapat dipertanggungjawabkan.
-            </p>
           </SectionCard>
           </>)}
         </div>
@@ -420,7 +399,7 @@ export default function AbsensiPage() {
               <table className="w-full text-left">
                 <thead>
                   <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
-                    <th className="py-2 pr-3">Freelancer</th>
+                    <th className="py-2 pr-3">{isOwner ? 'Freelancer' : 'Nama'}</th>
                     <th className="py-2">Total Jam Kerja Bulan Ini</th>
                   </tr>
                 </thead>
@@ -471,7 +450,7 @@ export default function AbsensiPage() {
           <table className="w-full text-left">
             <thead>
               <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
-                <th className="py-2 pr-3">Freelancer</th>
+                <th className="py-2 pr-3">{isOwner ? 'Freelancer' : 'Nama'}</th>
                 <th className="py-2">Total Jam Kerja Bulan Ini</th>
               </tr>
             </thead>

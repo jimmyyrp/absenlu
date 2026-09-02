@@ -226,13 +226,18 @@ export default function DashboardPage() {
           <ul className="divide-y divide-slate-50">
             {recentActivities.map((a) => (
               <li key={a.id} className="py-2.5 flex items-start gap-3">
-                <span className="h-7 w-7 rounded-full bg-gold/15 text-gold text-[9px] font-bold flex items-center justify-center shrink-0">
-                  {userFirst(state, a.userId)}
-                </span>
+                {!isFreelancer && (
+                  <span className="h-7 w-7 rounded-full bg-gold/15 text-gold text-[9px] font-bold flex items-center justify-center shrink-0">
+                    {userFirst(state, a.userId)}
+                  </span>
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="text-[11px] text-slate-600 truncate">
-                    <span className="font-bold text-navy">{state.users.find((u) => u.id === a.userId)?.name}</span>
-                    {' '}&middot; {a.activityType}
+                    {isFreelancer ? (
+                      <span className="font-bold text-navy">{a.activityType}</span>
+                    ) : (
+                      <><span className="font-bold text-navy">{state.users.find((u) => u.id === a.userId)?.name}</span>{' '}&middot; {a.activityType}</>
+                    )}
                   </p>
                   <p className="text-[10px] text-slate-500 truncate">{a.description}</p>
                   <p className="text-[9px] text-slate-400 mt-0.5">{formatDateTime(a.at)}</p>

@@ -238,7 +238,12 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
     },
     deleteUser: (id) => {
       if (!isOwner) return;
-      patchState((p) => ({ ...p, users: p.users.filter((u) => u.id !== id) }));
+      patchState((p) => {
+        // Guardrail: jangan hapus user yang punya tugas belum selesai
+        const hasActiveTasks = p.tasks.some((t) => t.assigneeId === id && t.status !== 'selesai');
+        if (hasActiveTasks) return p;
+        return { ...p, users: p.users.filter((u) => u.id !== id) };
+      });
     },
     setCurrentUser: (id) => patchState((p) => ({ ...p, currentUserId: id })),
 
@@ -278,6 +283,12 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
       patchState((p) => {
         const existing = p.attendance.find((a) => a.userId === userId && a.date === date);
         if (existing && (existing.status === 'hadir' || existing.status === 'selesai')) return p;
+        // Guardrail: hanya bisa absen hari ini
+        const today = new Date().toISOString().slice(0, 10);
+        if (date !== today) return p;
+        // Guardrail: jam abnormal (sebelum 05:00 atau sesudah 23:00)
+        const [h] = time.split(':').map(Number);
+        if (h < 5 || h >= 23) return p;
         const decorName = p.decors.find((d) => d.id === decorId)?.name || 'Umum';
         const rec: Attendance = {
           id: existing?.id || uid(),
@@ -355,6 +366,13 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
       patchState((p) => {
         const att = p.attendance.find((a) => a.userId === userId && a.date === date);
         if (!att) return p;
+        // Guardrail: max 3 koreksi pending per bulan per user
+        const monthKey = date.slice(0, 7);
+        const pendingCount = p.corrections.filter((c) => c.userId === userId && c.status === 'pending' && c.date.startsWith(monthKey)).length;
+        if (pendingCount >= 3) return p;
+        // Guardrail: koreksi maksimal 3 hari ke belakang
+        const diffMs = Date.now() - new Date(date + 'T23:59:59').getTime();
+        if (diffMs > 3 * 24 * 60 * 60 * 1000) return p;
         const corr: AttendanceCorrection = {
           id: uid(),
           attendanceId: att.id,
