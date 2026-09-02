@@ -1,0 +1,23 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "hero-decor",
+      "description": "Luxury grand ballroom with high ceilings and minimalist architectural wedding decor",
+      "imageUrl": "https://picsum.photos/seed/blu-arch-99/1200/800",
+      "imageHint": "luxury ballroom"
+    },
+    {
+      "id": "decor-lamaran",
+      "description": "Intimate engagement backdrop with gawang and premium artificial flowers",
+      "imageUrl": "https://picsum.photos/seed/blu-engage/800/1000",
+      "imageHint": "engagement backdrop"
+    },
+    {
+      "id": "decor-ultah",
+      "description": "Birthday decoration with organic balloon garland",
+      "imageUrl": "https://picsum.photos/seed/blu-party/800/1000",
+      "imageHint": "modern party"
+    }
+  ]
+}

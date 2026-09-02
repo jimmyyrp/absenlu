@@ -1,0 +1,53 @@
+{
+  "entities": {
+    "Category": {
+      "title": "Kategori Utama",
+      "description": "Kategori besar layanan arsitektural.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "SubCategory": {
+      "title": "Sub Kategori",
+      "description": "Tag detail layanan yang terhubung ke Kategori Utama.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "category_id": { "type": "integer", "description": "Relasi ke ID Kategori Utama" }
+      },
+      "required": ["name", "category_id"]
+    },
+    "Post": {
+      "title": "Karya Portofolio",
+      "description": "Data karya dekorasi premium dengan analitik tayangan.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "price": { "type": "number" },
+        "views": { "type": "integer" }
+      },
+      "required": ["title"]
+    },
+    "TestimonialToken": {
+      "title": "Multi-Use Token",
+      "description": "Token akses ulasan dengan kuota penggunaan kustom.",
+      "type": "object",
+      "properties": {
+        "token": { "type": "string" },
+        "usage_limit": { "type": "integer" },
+        "usage_count": { "type": "integer" }
+      }
+    }
+  },
+  "auth": {
+    "providers": ["password"]
+  },
+  "firestore": {
+    "/categories/{id}": { "schema": "Category", "description": "Kategori Utama" },
+    "/sub_categories/{id}": { "schema": "SubCategory", "description": "Sub Kategori Relasional" },
+    "/posts/{id}": { "schema": "Post", "description": "Postingan Portofolio" },
+    "/testimonial_tokens/{id}": { "schema": "TestimonialToken", "description": "Token Akses Multi-Guna" }
+  }
+}
