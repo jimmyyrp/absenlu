@@ -125,7 +125,7 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
     const handler = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY && e.newValue) {
         try {
-          setState({ ...SEED_STATE, ...JSON.parse(e.newValue) });
+          setState(JSON.parse(e.newValue));
         } catch {}
       }
     };

@@ -2,8 +2,8 @@
 
 import React, { useMemo, useState, useCallback } from 'react';
 import {
-  CheckCircle2, Clock4, LogOut, LogIn, MapPin, ShieldCheck, AlertTriangle,
-  FileWarning, BadgeCheck, CalendarCheck, X, UserX, RotateCcw,
+  Clock4, LogOut, LogIn, ShieldCheck, AlertTriangle,
+  BadgeCheck, CalendarCheck, X, UserX, RotateCcw,
   LayoutDashboard, BarChart3, FileEdit, Shield,
 } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -18,10 +18,6 @@ import { cn } from '@/lib/utils';
 import { PageHeader, SectionCard, StatusBadge, formatDateTime, Pagination } from '../ops-ui';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -533,59 +529,6 @@ export default function AbsensiPage() {
         </SectionCard>
       )}
 
-      {/* Dialog Absen Masuk */}
-      <Dialog open={showCheckin} onOpenChange={setShowCheckin}>
-        <DialogContent className="rounded-2xl max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-lg text-navy flex items-center gap-2"><LogIn size={16} /> Absen Masuk</DialogTitle>
-            <DialogDescription className="text-xs text-slate-400">Waktu diambil otomatis (server-time saat klik) & tidak bisa diubah langsung.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Decor</Label>
-              <Select value={decorId} onValueChange={setDecorId}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="Pilih decor / project" /></SelectTrigger>
-                <SelectContent>
-                  {activeDecors.length === 0 && <div className="px-3 py-2 text-xs text-slate-400">Tidak ada decor aktif</div>}
-                  {activeDecors.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-                  <SelectItem value="none">Umum / Tanpa decor</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Lokasi</Label>
-              <div className="mt-1 flex items-center gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={detectLocation}><MapPin size={14} /> Deteksi lokasi</Button>
-                {locStatus !== 'idle' && (
-                  <span className={cn("text-[10px] font-semibold", locStatus === 'ok' ? "text-emerald-600" : "text-slate-400")}>
-                    {locLabel}
-                  </span>
-                )}
-              </div>
-              <p className="text-[9px] text-slate-400 mt-1">Opsional — hanya info tambahan, bukan syarat absen.</p>
-            </div>
-            <div>
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Waktu Masuk</Label>
-              <div className="mt-1 text-sm font-bold text-navy">{new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB · otomatis</div>
-            </div>
-            <div>
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Catatan (opsional)</Label>
-              <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="cth. Mulai memuat barang untuk Pernikahan Rina & Aldi" rows={2} className="mt-1" />
-            </div>
-            <div className="flex items-start gap-2.5 rounded-xl border border-slate-200 p-3">
-              <Checkbox id="agree-ci" checked={agree} onCheckedChange={(v) => setAgree(Boolean(v))} />
-              <label htmlFor="agree-ci" className="text-[11px] text-slate-500 leading-relaxed">
-                Saya menyatakan data kehadiran ini <b>sesuai dengan kondisi sebenarnya</b> dan dapat dipertanggungjawabkan.
-              </label>
-            </div>
-          </div>
-          <DialogFooter className="gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setShowCheckin(false)}>Batal</Button>
-            <Button onClick={submitCheckin} disabled={!agree} className="bg-emerald-600 hover:bg-emerald-700 text-white"><ShieldCheck size={15} /> Konfirmasi & Absen</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Dialog Tidak Bekerja */}
       <Dialog open={showNoWork} onOpenChange={setShowNoWork}>
         <DialogContent className="rounded-2xl max-w-sm">
@@ -606,39 +549,6 @@ export default function AbsensiPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog Koreksi */}
-      <Dialog open={showCorrection} onOpenChange={setShowCorrection}>
-        <DialogContent className="rounded-2xl max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-lg text-navy">Ajukan Koreksi Absensi</DialogTitle>
-            <DialogDescription className="text-xs text-slate-400">Koreksi tidak langsung mengubah data — menunggu persetujuan owner.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Jam Masuk Sebenarnya</Label>
-                <Input type="time" value={corrIn} onChange={(e) => setCorrIn(e.target.value)} className="mt-1" />
-              </div>
-              <div>
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Jam Pulang Sebenarnya</Label>
-                <Input type="time" value={corrOut} onChange={(e) => setCorrOut(e.target.value)} className="mt-1" />
-              </div>
-            </div>
-            <div>
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Alasan *</Label>
-              <Textarea value={corrReason} onChange={(e) => setCorrReason(e.target.value)} placeholder="cth. Lupa melakukan checkout." rows={2} className="mt-1" />
-            </div>
-            <div>
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Keterangan Tambahan</Label>
-              <Textarea value={corrDetail} onChange={(e) => setCorrDetail(e.target.value)} placeholder="Detail situasi..." rows={2} className="mt-1" />
-            </div>
-          </div>
-          <DialogFooter className="gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setShowCorrection(false)}>Batal</Button>
-            <Button onClick={submitCorrection} disabled={!corrReason.trim()} className="bg-navy text-white">Ajukan Koreksi</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

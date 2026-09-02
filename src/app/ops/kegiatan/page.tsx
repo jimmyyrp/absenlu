@@ -23,7 +23,8 @@ const ACTIVITY_STATUS = [
 type ActStatus = typeof ACTIVITY_STATUS[number]['value'];
 
 export default function KegiatanPage() {
-  const { state, selectedDecor, decors, addActivity, deleteActivity, activities, addPhoto, tasks } = useOps();
+  const { state, currentUser, selectedDecor, decors, addActivity, deleteActivity, activities, addPhoto, tasks } = useOps();
+  const isManager = currentUser.role === 'owner' || currentUser.role === 'admin';
   const { toast } = useToast();
 
   const [type, setType] = useState('');
@@ -47,10 +48,12 @@ export default function KegiatanPage() {
     [tasks, selectedDecor],
   );
 
-  const decorActivities = useMemo(
-    () => (decorId ? activities.filter((a) => a.decorId === decorId).sort((a, b) => (a.at < b.at ? 1 : -1)) : []),
-    [activities, decorId],
-  );
+  const decorActivities = useMemo(() => {
+    if (!decorId) return [];
+    let list = activities.filter((a) => a.decorId === decorId);
+    if (!isManager) list = list.filter((a) => a.userId === currentUser.id);
+    return list.sort((a, b) => (a.at < b.at ? 1 : -1));
+  }, [activities, decorId, isManager, currentUser.id]);
 
   const activityPageCount = Math.max(1, Math.ceil(decorActivities.length / PAGE_SIZE));
   const shownActivities = decorActivities.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -195,7 +198,9 @@ export default function KegiatanPage() {
                         <div className="flex items-center gap-2 shrink-0">
                           <span className="px-2 py-0.5 rounded-full bg-gold/15 text-gold text-[9px] font-bold uppercase tracking-widest">{a.activityType}</span>
                           <StatusBadge color={st?.color || 'bg-slate-400'} label={st?.label || a.status} />
-                          <button onClick={() => { deleteActivity(a.id); }} className="text-slate-300 hover:text-red-500" aria-label="hapus"><Trash2 size={14} /></button>
+                          {(isManager || a.userId === currentUser.id) && (
+                            <button onClick={() => { deleteActivity(a.id); }} className="text-slate-300 hover:text-red-500" aria-label="hapus"><Trash2 size={14} /></button>
+                          )}
                         </div>
                       </div>
                       <p className="text-sm text-slate-700 mt-2">{a.description}</p>

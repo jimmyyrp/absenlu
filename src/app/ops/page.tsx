@@ -7,8 +7,7 @@ import {
 } from 'lucide-react';
 import { useOps, userFirst } from '@/lib/ops/store';
 import {
-  DECOR_STATUS_COLOR, DECOR_STATUS_LABEL, TASK_STATUS_LABEL, TASK_STATUS_COLOR,
-  ATTENDANCE_STATUS_LABEL, ATTENDANCE_STATUS_COLOR,
+  DECOR_STATUS_COLOR, DECOR_STATUS_LABEL,
 } from '@/lib/ops/types';
 import {
   monthlyFinancial, monthlyWorkHours, formatIDR, formatIDRCompact, formatDuration,
