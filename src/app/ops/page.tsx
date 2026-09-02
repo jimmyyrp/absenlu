@@ -25,15 +25,15 @@ function QuickCard({
     <Link
       href={href}
       className={cn(
-        "group relative flex flex-col items-center justify-center gap-3 rounded-2xl border p-6 shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5 bg-white border-slate-100",
+        "group relative flex min-h-[84px] flex-col items-center justify-center gap-2 rounded-2xl border p-3 sm:min-h-[112px] sm:p-6 shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5 bg-white border-slate-100",
       )}
     >
-      <div className={cn("h-14 w-14 rounded-2xl flex items-center justify-center text-white", color)}>
+      <div className={cn("h-10 w-10 sm:h-14 sm:w-14 rounded-xl sm:rounded-2xl flex items-center justify-center text-white", color)}>
         {icon}
       </div>
       <div className="text-center">
-        <p className="text-sm font-headline font-bold text-navy">{label}</p>
-        {sub && <p className="text-[10px] text-slate-400 mt-0.5">{sub}</p>}
+        <p className="text-xs sm:text-sm font-headline font-bold text-navy">{label}</p>
+        {sub && <p className="text-[9px] sm:text-[10px] text-slate-400 mt-0.5 line-clamp-1">{sub}</p>}
       </div>
       <ChevronRight size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-200 group-hover:text-gold transition-colors" />
     </Link>
@@ -112,7 +112,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── 3 Quick Access Cards ──────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
         <QuickCard
           href="/ops/absensi"
           icon={<Clock4 size={26} />}

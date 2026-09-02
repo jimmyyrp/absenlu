@@ -98,10 +98,11 @@ export default function AnalisaPage() {
 
       {/* Performance table */}
       <SectionCard title="Performa Bulanan" className="mb-4">
-        <div className="overflow-x-auto no-scrollbar">
-          <table className="w-full text-left">
+        <div className="hidden overflow-x-auto no-scrollbar sm:block">
+          <table className="w-full min-w-[600px] text-left">
             <thead>
               <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
+                <th className="sticky left-0 z-10 bg-white py-2 pr-3">Indikator</th>
                 {monthsHeader().map((h) => <th key={h} className="py-2 pr-3">{h}</th>)}
               </tr>
             </thead>
@@ -112,6 +113,29 @@ export default function AnalisaPage() {
               <PerfRow label="Profit" values={series.map((s) => formatIDRCompact(s.profit))} highlight />
             </tbody>
           </table>
+        </div>
+        <div className="space-y-2 sm:hidden">
+          {([
+            ['Decor', series.map((s) => String(s.decor))],
+            ['Omzet', series.map((s) => formatIDRCompact(s.revenue))],
+            ['Pengeluaran', series.map((s) => formatIDRCompact(s.expenses))],
+            ['Profit', series.map((s) => formatIDRCompact(s.profit))],
+          ] as [string, string[]][]).map(([label, values]) => (
+            <div key={label} className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-navy">{label}</span>
+                <span className="text-[9px] text-slate-400">6 bulan</span>
+              </div>
+              <div className="grid grid-cols-6 gap-1">
+                {values.map((value, index) => (
+                  <div key={`${label}-${index}`} className="min-w-0 text-center">
+                    <p className="text-[9px] text-slate-400">{MONTHS[index].label}</p>
+                    <p className="mt-0.5 truncate text-[10px] font-bold text-slate-700">{value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </SectionCard>
 
@@ -173,7 +197,7 @@ function statsChange(p: number) {
 function PerfRow({ label, values, highlight }: { label: string; values: string[]; highlight?: boolean }) {
   return (
     <tr className="border-b border-slate-50">
-      <td className={cn("py-2.5 pr-3 text-[11px] font-black uppercase tracking-widest", highlight ? "text-navy" : "text-slate-400")}>{label}</td>
+      <td className={cn("sticky left-0 bg-white py-2.5 pr-3 text-[11px] font-black uppercase tracking-widest", highlight ? "text-navy" : "text-slate-400")}>{label}</td>
       {values.map((v, i) => (
         <td key={i} className={cn("py-2.5 pr-3 text-sm", highlight ? "font-bold text-navy" : "text-slate-600")}>{v}</td>
       ))}

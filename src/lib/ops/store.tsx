@@ -45,15 +45,15 @@ interface OpsContextValue {
   updateTask: (id: string, patch: Partial<Task>) => void;
   deleteTask: (id: string) => void;
   toggleTask: (id: string) => void;
-  // attendance — 1 sesi per user per hari (self-report + audit)
-  attendanceForDate: (date: string) => Record<string, Attendance>;
-  clockIn: (userId: string, date: string, decorId?: string, note?: string, device?: string) => Attendance | null;
-  clockOut: (userId: string, date: string) => void;
+  // attendance — multi-sesi per hari (per decor, dari todo list)
+  attendanceForDate: (date: string) => Attendance[];
+  clockIn: (userId: string, date: string, decorId: string, note?: string, device?: string) => Attendance | null;
+  clockOut: (userId: string, date: string, decorId: string) => void;
   declareNoWork: (userId: string, date: string) => void;
-  deleteSession: (userId: string, date: string) => void;
+  deleteSession: (attendanceId: string) => void;
   // corrections
   corrections: AttendanceCorrection[];
-  requestCorrection: (userId: string, date: string, patch: { requestedCheckIn?: string; requestedCheckOut?: string; reason: string; detail?: string }) => void;
+  requestCorrection: (attendanceId: string, patch: { requestedCheckIn?: string; requestedCheckOut?: string; reason: string; detail?: string }) => void;
   approveCorrection: (id: string, decidedBy: string) => void;
   rejectCorrection: (id: string, decidedBy: string) => void;
   // audit
@@ -288,23 +288,28 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
       }),
 
     attendanceForDate: (date) => {
-      const map: Record<string, Attendance> = {};
-      for (const a of state.attendance) if (a.date === date) map[a.userId] = a;
-      return map;
+      return state.attendance.filter((a) => a.date === date);
     },
     clockIn: (userId, date, decorId, note, device) => {
       const time = nowTime();
       const at = new Date().toISOString();
       let result: Attendance | null = null;
       patchState((p) => {
-        const existing = p.attendance.find((a) => a.userId === userId && a.date === date);
-        if (existing && (existing.status === 'hadir' || existing.status === 'selesai')) return p;
         // Guardrail: hanya bisa absen hari ini
         const today = new Date().toISOString().slice(0, 10);
         if (date !== today) return p;
+        // Guardrail: user harus punya tugas di decor ini (dari todo list)
+        const hasTasks = p.tasks.some((t) => t.decorId === decorId && t.assigneeId === userId);
+        if (!hasTasks) return p;
+        // Guardrail: sudah ada sesi aktif (hadir) untuk decor ini hari ini
+        const existingActive = p.attendance.find((a) => a.userId === userId && a.date === date && a.decorId === decorId && a.status === 'hadir');
+        if (existingActive) return p;
+        // Guardrail: sudah ada sesi selesai untuk decor ini hari ini
+        const existingDone = p.attendance.find((a) => a.userId === userId && a.date === date && a.decorId === decorId && a.status === 'selesai');
+        if (existingDone) return p;
         const decorName = p.decors.find((d) => d.id === decorId)?.name || 'Umum';
         const rec: Attendance = {
-          id: existing?.id || uid(),
+          id: uid(),
           userId,
           date,
           status: 'hadir',
@@ -313,33 +318,35 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
           checkOut: undefined,
           note,
           device,
-          createdAt: existing?.createdAt || at,
+          createdAt: at,
           updatedAt: at,
         };
         result = rec;
         return {
           ...p,
-          attendance: existing
-            ? p.attendance.map((a) => (a.id === existing.id ? rec : a))
-            : [...p.attendance, rec],
+          attendance: [...p.attendance, rec],
           audit: [...p.audit, { id: uid(), at, userId, action: 'absensi.masuk', detail: `Absen masuk ${time} · ${decorName}`, targetId: rec.id }],
         };
       });
       return result;
     },
-    clockOut: (userId, date) => {
+    clockOut: (userId, date, decorId) => {
       const time = nowTime();
       const at = new Date().toISOString();
       patchState((p) => {
-        const idx = p.attendance.findIndex((a) => a.userId === userId && a.date === date);
+        const idx = p.attendance.findIndex((a) => a.userId === userId && a.date === date && a.decorId === decorId && a.status === 'hadir');
         if (idx < 0) return p;
+        // Guardrail: tidak boleh akhiri jika ada tugas yang belum selesai
+        const pendingTasks = p.tasks.filter((t) => t.decorId === decorId && t.assigneeId === userId && t.status !== 'selesai');
+        if (pendingTasks.length > 0) return p;
+        const decorName = p.decors.find((d) => d.id === decorId)?.name || 'Umum';
         const rec: Attendance = { ...p.attendance[idx], status: 'selesai', checkOut: time, updatedAt: at };
         const next = [...p.attendance];
         next[idx] = rec;
         return {
           ...p,
           attendance: next,
-          audit: [...p.audit, { id: uid(), at, userId, action: 'absensi.pulang', detail: `Absen pulang ${time}`, targetId: rec.id }],
+          audit: [...p.audit, { id: uid(), at, userId, action: 'absensi.pulang', detail: `Absen pulang ${time} · ${decorName}`, targetId: rec.id }],
         };
       });
     },
@@ -366,31 +373,35 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
         };
       });
     },
-    deleteSession: (userId, date) => {
-      const at = new Date().toISOString();
-      patchState((p) => ({
-        ...p,
-        attendance: p.attendance.filter((a) => !(a.userId === userId && a.date === date)),
-        audit: [...p.audit, { id: uid(), at, userId, action: 'absensi.hapus', detail: 'Session absensi dihapus', targetId: userId }],
-      }));
-    },
-    requestCorrection: (userId, date, patch) => {
+    deleteSession: (attendanceId) => {
       const at = new Date().toISOString();
       patchState((p) => {
-        const att = p.attendance.find((a) => a.userId === userId && a.date === date);
+        const target = p.attendance.find((a) => a.id === attendanceId);
+        if (!target) return p;
+        return {
+          ...p,
+          attendance: p.attendance.filter((a) => a.id !== attendanceId),
+          audit: [...p.audit, { id: uid(), at, userId: target.userId, action: 'absensi.hapus', detail: `Session absensi ${target.decorId || ''} dihapus`, targetId: attendanceId }],
+        };
+      });
+    },
+    requestCorrection: (attendanceId, patch) => {
+      const at = new Date().toISOString();
+      patchState((p) => {
+        const att = p.attendance.find((a) => a.id === attendanceId);
         if (!att) return p;
         // Guardrail: max 3 koreksi pending per bulan per user
-        const monthKey = date.slice(0, 7);
-        const pendingCount = p.corrections.filter((c) => c.userId === userId && c.status === 'pending' && c.date.startsWith(monthKey)).length;
+        const monthKey = att.date.slice(0, 7);
+        const pendingCount = p.corrections.filter((c) => c.userId === att.userId && c.status === 'pending' && c.date.startsWith(monthKey)).length;
         if (pendingCount >= 3) return p;
         // Guardrail: koreksi maksimal 3 hari ke belakang
-        const diffMs = Date.now() - new Date(date + 'T23:59:59').getTime();
+        const diffMs = Date.now() - new Date(att.date + 'T23:59:59').getTime();
         if (diffMs > 3 * 24 * 60 * 60 * 1000) return p;
         const corr: AttendanceCorrection = {
           id: uid(),
           attendanceId: att.id,
-          userId,
-          date,
+          userId: att.userId,
+          date: att.date,
           requestedCheckIn: patch.requestedCheckIn,
           requestedCheckOut: patch.requestedCheckOut,
           reason: patch.reason,
@@ -401,7 +412,7 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
         return {
           ...p,
           corrections: [...p.corrections, corr],
-          audit: [...p.audit, { id: uid(), at, userId, action: 'koreksi.ajukan', detail: patch.reason, targetId: corr.id }],
+          audit: [...p.audit, { id: uid(), at, userId: att.userId, action: 'koreksi.ajukan', detail: patch.reason, targetId: corr.id }],
         };
       });
     },
@@ -410,6 +421,8 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
       patchState((p) => {
         const corr = p.corrections.find((c) => c.id === id && c.status === 'pending');
         if (!corr) return p;
+        const att = p.attendance.find((a) => a.id === corr.attendanceId);
+        const decorName = att?.decorId ? p.decors.find((d) => d.id === att.decorId)?.name : undefined;
         return {
           ...p,
           corrections: p.corrections.map((c) => (c.id === id ? { ...c, status: 'approved' as const, decidedAt: at, decidedBy } : c)),
@@ -418,7 +431,7 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
               ? { ...a, checkIn: corr.requestedCheckIn ?? a.checkIn, checkOut: corr.requestedCheckOut ?? a.checkOut, updatedAt: at }
               : a,
           ),
-          audit: [...p.audit, { id: uid(), at, userId: decidedBy, action: 'koreksi.setujui', detail: `Menyetujui koreksi ${corr.date}`, targetId: corr.id }],
+          audit: [...p.audit, { id: uid(), at, userId: decidedBy, action: 'koreksi.setujui', detail: `Menyetujui koreksi ${corr.date}${decorName ? ` · ${decorName}` : ''}`, targetId: corr.id }],
         };
       });
     },
@@ -427,10 +440,12 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
       patchState((p) => {
         const corr = p.corrections.find((c) => c.id === id && c.status === 'pending');
         if (!corr) return p;
+        const att = p.attendance.find((a) => a.id === corr.attendanceId);
+        const decorName = att?.decorId ? p.decors.find((d) => d.id === att.decorId)?.name : undefined;
         return {
           ...p,
           corrections: p.corrections.map((c) => (c.id === id ? { ...c, status: 'rejected' as const, decidedAt: at, decidedBy } : c)),
-          audit: [...p.audit, { id: uid(), at, userId: decidedBy, action: 'koreksi.tolak', detail: `Menolak koreksi ${corr.date}`, targetId: corr.id }],
+          audit: [...p.audit, { id: uid(), at, userId: decidedBy, action: 'koreksi.tolak', detail: `Menolak koreksi ${corr.date}${decorName ? ` · ${decorName}` : ''}`, targetId: corr.id }],
         };
       });
     },

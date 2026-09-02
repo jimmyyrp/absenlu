@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { opsAuthed, opsLogout } from '@/lib/ops/auth';
 import {
   LayoutDashboard, CalendarRange, ListChecks, Clock4, Wallet, Image, RotateCcw, Settings, LogOut, HelpCircle,
+  BarChart3, FileText, ClipboardList,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { OpsProvider, useOps } from '@/lib/ops/store';
@@ -42,6 +43,13 @@ const BOTTOM_NAV_FREELANCER = [
   { label: 'Tugas', href: '/ops/todo', icon: ListChecks },
   { label: 'Absensi', href: '/ops/absensi', icon: Clock4 },
   { label: 'Dokumentasi', href: '/ops/dokumentasi', icon: Image },
+];
+
+const MANAGER_NAV = [
+  ...BOTTOM_NAV_OWNER,
+  { label: 'Kegiatan', href: '/ops/kegiatan', icon: ClipboardList },
+  { label: 'Analisa', href: '/ops/analisa', icon: BarChart3 },
+  { label: 'Laporan', href: '/ops/laporan', icon: FileText },
 ];
 
 function DecorSelector() {
@@ -101,11 +109,12 @@ function BottomNav() {
   const { currentUser } = useOps();
   const isFreelancer = currentUser.role === 'freelancer';
   const items = isFreelancer ? BOTTOM_NAV_FREELANCER : BOTTOM_NAV_OWNER;
+  const desktopItems = isFreelancer ? BOTTOM_NAV_FREELANCER : MANAGER_NAV;
   return (
     <>
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-[0_-2px_12px_rgba(2,17,44,0.06)] md:hidden">
         <div className="flex items-stretch justify-around max-w-lg mx-auto">
-          {items.map((item) => {
+          {desktopItems.map((item) => {
             const isActive = item.href === '/ops'
               ? pathname === '/ops'
               : pathname.startsWith(item.href);
@@ -162,7 +171,9 @@ function Shell({ children }: { children: React.ReactNode }) {
   const { currentUser, selectedDecor } = useOps();
   const [helpOpen, setHelpOpen] = useState(false);
   const ALL_TITLES = [...BOTTOM_NAV_OWNER, ...BOTTOM_NAV_FREELANCER];
-  const title = ALL_TITLES.find((n) => (n.href === '/ops' ? pathname === '/ops' : pathname.startsWith(n.href)))?.label || 'Dasbor';
+  const title = ALL_TITLES.find((n) => (n.href === '/ops' ? pathname === '/ops' : pathname.startsWith(n.href)))?.label
+    || MANAGER_NAV.find((n) => pathname.startsWith(n.href))?.label
+    || 'Dasbor';
   const isOwner = currentUser.role === 'owner';
   const isManager = currentUser.role === 'owner' || currentUser.role === 'admin';
   const freelancerRoutes = ['/ops', '/ops/decor', '/ops/todo', '/ops/absensi', '/ops/dokumentasi', '/ops/kegiatan'];
@@ -224,6 +235,9 @@ function Shell({ children }: { children: React.ReactNode }) {
             <LogOut size={15} />
             <span className="hidden sm:inline">Keluar</span>
           </Button>
+        </div>
+        <div className="sm:hidden w-full border-t border-slate-100 px-4 py-2.5 bg-slate-50/70">
+          <DecorSelector />
         </div>
       </header>
 

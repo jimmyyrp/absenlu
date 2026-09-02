@@ -4,7 +4,7 @@ import React, { useMemo, useState, useCallback } from 'react';
 import {
   Clock4, LogOut, LogIn, ShieldCheck, AlertTriangle,
   BadgeCheck, CalendarCheck, X, UserX, RotateCcw,
-  LayoutDashboard, BarChart3, FileEdit, Shield,
+  LayoutDashboard, BarChart3, FileEdit, Shield, ListChecks,
 } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useOps, userFirst } from '@/lib/ops/store';
@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 const AUDIT_LABEL: Record<string, { label: string; color: string }> = {
   'absensi.masuk': { label: 'Absen Masuk', color: 'bg-emerald-100 text-emerald-700' },
@@ -43,7 +44,7 @@ const VALID_TABS: string[] = ['status', 'rekap', 'koreksi', 'audit'];
 
 export default function AbsensiPage() {
   const {
-    state, currentUser, decors, attendanceForDate, clockIn, clockOut,
+    state, currentUser, decors, tasks, attendanceForDate, clockIn, clockOut,
     declareNoWork, deleteSession, requestCorrection, approveCorrection, rejectCorrection,
     corrections, audit,
   } = useOps();
@@ -68,42 +69,92 @@ export default function AbsensiPage() {
   const [auditPage, setAuditPage] = useState(1);
   const AUDIT_PAGE_SIZE = 10;
 
-  const records = useMemo<Record<string, Attendance>>(() => attendanceForDate(date), [attendanceForDate, date]);
+  // Multi-session: array of attendance for this date
+  const dayRecords = useMemo(() => attendanceForDate(date), [attendanceForDate, date]);
+
+  // Freelancers list
   const freelancers = useMemo(() => state.users.filter((u) => u.active && u.role === 'freelancer'), [state.users]);
-  const my = records[currentUser.id];
 
-  const summary = useMemo(() => {
-    let hadir = 0, selesai = 0, tidakBekerja = 0, mengisi = 0;
-    for (const u of freelancers) {
-      const r = records[u.id];
-      if (!r) continue;
-      mengisi++;
-      if (r.status === 'hadir') hadir++;
-      else if (r.status === 'selesai') selesai++;
-      else if (r.status === 'tidak-bekerja') tidakBekerja++;
+  // Decors that currentUser has tasks for (sorted by date, then name)
+  const myDecorTasks = useMemo(() => {
+    const map = new Map<string, { decorId: string; decorName: string; total: number; done: number }>();
+    for (const t of tasks) {
+      if (t.assigneeId !== currentUser.id) continue;
+      const existing = map.get(t.decorId);
+      const decorName = decors.find((d) => d.id === t.decorId)?.name || '?';
+      if (existing) {
+        existing.total++;
+        if (t.status === 'selesai') existing.done++;
+      } else {
+        map.set(t.decorId, { decorId: t.decorId, decorName, total: 1, done: t.status === 'selesai' ? 1 : 0 });
+      }
     }
-    return { hadir, selesai, tidakBekerja, tidakMengisi: freelancers.length - mengisi, total: freelancers.length };
-  }, [records, freelancers]);
+    return Array.from(map.values()).sort((a, b) => {
+      const dA = decors.find((d) => d.id === a.decorId);
+      const dB = decors.find((d) => d.id === b.decorId);
+      return (dA?.date || '').localeCompare(dB?.date || '');
+    });
+  }, [tasks, currentUser.id, decors]);
 
+  // Owner: all freelancers with tasks
+  const allDecorWithTasks = useMemo(() => {
+    const map = new Map<string, { decorId: string; decorName: string; assignees: Set<string> }>();
+    for (const t of tasks) {
+      if (!t.assigneeId) continue;
+      const existing = map.get(t.decorId);
+      const decorName = decors.find((d) => d.id === t.decorId)?.name || '?';
+      if (existing) {
+        existing.assignees.add(t.assigneeId);
+      } else {
+        map.set(t.decorId, { decorId: t.decorId, decorName, assignees: new Set([t.assigneeId]) });
+      }
+    }
+    return Array.from(map.values());
+  }, [tasks, decors]);
+
+  // My records today (filtered from dayRecords)
+  const myRecords = useMemo(() => dayRecords.filter((r) => r.userId === currentUser.id), [dayRecords, currentUser.id]);
+
+  // Summary for owner
+  const summary = useMemo(() => {
+    let hadir = 0, selesai = 0, tidakBekerja = 0, tidakMengisi = 0;
+    for (const u of freelancers) {
+      const userRecords = dayRecords.filter((r) => r.userId === u.id);
+      if (userRecords.length === 0) {
+        tidakMengisi++;
+        continue;
+      }
+      for (const r of userRecords) {
+        if (r.status === 'hadir') hadir++;
+        else if (r.status === 'selesai') selesai++;
+        else if (r.status === 'tidak-bekerja') tidakBekerja++;
+      }
+    }
+    return { hadir, selesai, tidakBekerja, tidakMengisi, total: freelancers.length };
+  }, [dayRecords, freelancers]);
+
+  // Flags
   const flags = useMemo(() => {
     const out: { userId: string; text: string; sub: string }[] = [];
     const monthCorr = corrections.filter((c) => c.date.slice(0, 7) === month);
     for (const u of freelancers) {
-      const r = records[u.id];
       const corrCount = monthCorr.filter((c) => c.userId === u.id).length;
       if (corrCount >= 3) out.push({ userId: u.id, text: `${u.name.split(' ')[0]} melakukan ${corrCount} koreksi bulan ini.`, sub: 'Koreksi berulang bisa menandakan pola tidak akurat.' });
-      if (r?.checkIn) {
-        const hm = r.checkIn.split(':').map(Number);
-        const mins = hm[0] * 60 + hm[1];
-        if (mins < 5 * 60 || mins > 21 * 60) out.push({ userId: u.id, text: `${u.name.split(' ')[0]} absen masuk ${r.checkIn}.`, sub: 'Jam masuk di luar waktu normal.' });
-      }
-      if (r?.status === 'selesai' && r.checkIn && r.checkOut) {
-        const dur = minutesBetween(r.checkIn, r.checkOut);
-        if (dur > 0 && dur < 30) out.push({ userId: u.id, text: `${u.name.split(' ')[0]} mencatat durasi ${dur} menit.`, sub: 'Terlalu pendek — tinjau kebenarannya.' });
+      const userRecords = dayRecords.filter((r) => r.userId === u.id);
+      for (const r of userRecords) {
+        if (r.checkIn) {
+          const hm = r.checkIn.split(':').map(Number);
+          const mins = hm[0] * 60 + hm[1];
+          if (mins < 5 * 60 || mins > 21 * 60) out.push({ userId: u.id, text: `${u.name.split(' ')[0]} absen masuk ${r.checkIn}.`, sub: 'Jam masuk di luar waktu normal.' });
+        }
+        if (r.status === 'selesai' && r.checkIn && r.checkOut) {
+          const dur = minutesBetween(r.checkIn, r.checkOut);
+          if (dur > 0 && dur < 30) out.push({ userId: u.id, text: `${u.name.split(' ')[0]} mencatat durasi ${dur} menit.`, sub: 'Terlalu pendek — tinjau kebenarannya.' });
+        }
       }
     }
     return out;
-  }, [freelancers, records, corrections, month]);
+  }, [freelancers, dayRecords, corrections, month]);
 
   const workHours = useMemo(() => monthlyWorkHours(state.attendance, month), [state.attendance, month]);
   const hourMap = new Map(workHours.map((h) => [h.userId, h.minutes]));
@@ -122,7 +173,12 @@ export default function AbsensiPage() {
   const auditPageCount = Math.max(1, Math.ceil(sortedAudit.length / AUDIT_PAGE_SIZE));
   const recentAudit = sortedAudit.slice((auditPage - 1) * AUDIT_PAGE_SIZE, auditPage * AUDIT_PAGE_SIZE);
 
-  const myDuration = my ? minutesBetween(my.checkIn, my.checkOut) : 0;
+  // Total duration for user today
+  const myTotalDuration = useMemo(
+    () => myRecords.reduce((sum, r) => sum + minutesBetween(r.checkIn, r.checkOut), 0),
+    [myRecords],
+  );
+
   const dateLabel = new Date(date + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   // Freelancer hanya lihat tab: status & rekap
@@ -148,7 +204,7 @@ export default function AbsensiPage() {
         }
       />
 
-      {/* Tabs — freelancer cuma lihat status & rekap */}
+      {/* Tabs */}
       <div className="flex gap-1.5 mb-4 overflow-x-auto no-scrollbar pb-1">
         {visibleTabs.map((t) => (
           <button
@@ -189,58 +245,106 @@ export default function AbsensiPage() {
               </div>
             </SectionCard>
           ) : (<>
-          <SectionCard title="Absensi Hari Ini">
+          {/* Absensi per Decor — Freelancer */}
+          <SectionCard title="Absensi Hari Ini" action={
+            isToday && myRecords.length > 0 && (
+              <span className="text-[10px] font-bold text-slate-400">Total: {formatDuration(myTotalDuration).label}</span>
+            )
+          }>
             {!isToday ? (
               <div className="text-sm text-slate-500 rounded-xl bg-slate-50 p-4 text-center">
                 <CalendarCheck size={18} className="text-slate-300 mb-2 mx-auto" />
                 Absensi hanya bisa dilakukan untuk <b>hari ini</b>.
               </div>
-            ) : !my ? (
-              <div className="space-y-3">
-                <p className="text-sm text-slate-500 text-center">Pencet tombol di bawah untuk catat kehadiran.</p>
-                <Button
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-14 text-base font-bold"
-                  onClick={() => {
-                    const rec = clockIn(currentUser.id, date, undefined, undefined, opsDevice());
-                    if (rec) {
-                      toast({ title: 'Hadir tercatat', description: `${rec.checkIn} WIB` });
-                    } else {
-                      toast({ title: 'Gagal mencatat', description: 'Anda sudah absen hari ini atau terjadi kesalahan.', variant: 'destructive' });
-                    }
-                  }}
-                >
-                  <LogIn size={18} className="mr-2" /> Hadir
-                </Button>
-                <Button variant="outline" className="w-full h-10 text-slate-500" onClick={() => setShowNoWork(true)}>
-                  <UserX size={15} /> Tidak Bekerja Hari Ini
-                </Button>
-              </div>
-            ) : my.status === 'hadir' ? (
-              <div className="space-y-3">
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-center">
-                  <p className="text-emerald-700 font-bold text-sm uppercase tracking-widest">Sedang Bekerja</p>
-                  <p className="text-xs text-slate-500 mt-1">Masuk {my.checkIn} WIB · {decorName(my.decorId)}</p>
-                </div>
-                <Button
-                  className="w-full bg-sky-600 hover:bg-sky-700 text-white h-14 text-base font-bold"
-                  onClick={() => { clockOut(currentUser.id, date); toast({ title: 'Selesai tercatat' }); }}
-                >
-                  <LogOut size={18} className="mr-2" /> Selesai
-                </Button>
-              </div>
-            ) : my.status === 'selesai' ? (
-              <div className="rounded-xl border border-sky-200 bg-sky-50 p-4 text-center">
-                <p className="text-sky-700 font-bold text-sm uppercase tracking-widest">Selesai Bekerja</p>
-                <div className="mt-2 text-sm text-slate-600">
-                  <p><b>Masuk:</b> {my.checkIn} · <b>Keluar:</b> {my.checkOut}</p>
-                  {myDuration > 0 && <p className="text-xs text-slate-500 mt-1">Durasi {formatDuration(myDuration).label}</p>}
-                </div>
+            ) : myDecorTasks.length === 0 ? (
+              <div className="text-sm text-slate-500 rounded-xl bg-slate-50 p-4 text-center">
+                <ListChecks size={18} className="text-slate-300 mb-2 mx-auto" />
+                Tidak ada tugas yang ditugaskan untuk Anda.
               </div>
             ) : (
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
-                <p className="text-slate-600 font-bold text-sm uppercase tracking-widest">Tidak Bekerja Hari Ini</p>
-                <Button size="sm" className="mt-3 bg-navy text-white" onClick={() => deleteSession(currentUser.id, date)}>
-                  <RotateCcw size={13} /> Ubah ke Hadir
+              <div className="space-y-3">
+                {myDecorTasks.map((dt) => {
+                  const activeRecord = myRecords.find((r) => r.decorId === dt.decorId && r.status === 'hadir');
+                  const doneRecord = myRecords.find((r) => r.decorId === dt.decorId && r.status === 'selesai');
+                  const hasRecord = !!activeRecord || !!doneRecord;
+                  const allDone = dt.done === dt.total;
+
+                  return (
+                    <div key={dt.decorId} className="rounded-xl border border-slate-100 bg-slate-50 p-3.5">
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-navy truncate">{dt.decorName}</p>
+                          <p className="text-[10px] text-slate-400">{dt.done}/{dt.total} tugas selesai</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {doneRecord ? (
+                            <StatusBadge color="bg-sky-500" label="Selesai Bekerja" />
+                          ) : activeRecord ? (
+                            <StatusBadge color="bg-emerald-500" label="Sedang Bekerja" />
+                          ) : null}
+                        </div>
+                      </div>
+
+                      {/* Detail sesi yang sudah ada */}
+                      {doneRecord && (
+                        <p className="text-[11px] text-slate-500 mb-2">
+                          Masuk {doneRecord.checkIn} · Keluar {doneRecord.checkOut}
+                          {doneRecord.checkIn && doneRecord.checkOut && <> · {formatDuration(minutesBetween(doneRecord.checkIn, doneRecord.checkOut)).label}</>}
+                        </p>
+                      )}
+                      {activeRecord && (
+                        <p className="text-[11px] text-emerald-600 font-semibold mb-2">
+                          Masuk {activeRecord.checkIn} WIB — sedang bekerja...
+                        </p>
+                      )}
+
+                      {/* Aksi */}
+                      {!hasRecord ? (
+                        <Button
+                          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-10 text-sm font-bold"
+                          onClick={() => {
+                            const rec = clockIn(currentUser.id, date, dt.decorId, undefined, opsDevice());
+                            if (rec) {
+                              toast({ title: 'Hadir tercatat', description: `${rec.checkIn} WIB · ${dt.decorName}` });
+                            } else {
+                              toast({ title: 'Gagal mencatat', description: 'Anda sudah absen atau tidak ada tugas untuk decor ini.', variant: 'destructive' });
+                            }
+                          }}
+                        >
+                          <LogIn size={15} className="mr-2" /> Absen Masuk — {dt.decorName}
+                        </Button>
+                      ) : activeRecord ? (
+                        <Button
+                          className={cn(
+                            "w-full h-10 text-sm font-bold",
+                            allDone
+                              ? "bg-sky-600 hover:bg-sky-700 text-white"
+                              : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                          )}
+                          disabled={!allDone}
+                          onClick={() => {
+                            clockOut(currentUser.id, date, dt.decorId);
+                            toast({ title: 'Selesai tercatat', description: `${dt.decorName}` });
+                          }}
+                          title={!allDone ? `Selesaikan semua tugas dulu (${dt.done}/${dt.total})` : undefined}
+                        >
+                          <LogOut size={15} className="mr-2" />
+                          {allDone ? `Selesai — ${dt.decorName}` : `Tugas belum selesai (${dt.done}/${dt.total})`}
+                        </Button>
+                      ) : null}
+
+                      {/* Selesai — sudah record */}
+                      {doneRecord && (
+                        <div className="rounded-lg border border-sky-200 bg-sky-50 p-2.5 text-center mt-2">
+                          <p className="text-[11px] text-sky-700 font-bold">✓ Sudah absen pulang</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                <Button variant="outline" className="w-full h-10 text-slate-500" onClick={() => setShowNoWork(true)}>
+                  <UserX size={15} /> Tidak Bekerja Hari Ini
                 </Button>
               </div>
             )}
@@ -249,6 +353,7 @@ export default function AbsensiPage() {
             <ul className="space-y-2 text-[11px] text-slate-500">
               <li className="flex justify-between"><span className="text-slate-400">Perangkat</span><span className="font-semibold text-navy">{opsDevice()}</span></li>
               <li className="flex justify-between"><span className="text-slate-400">Waktu server</span><span className="font-semibold text-navy">{new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB</span></li>
+              <li className="flex justify-between"><span className="text-slate-400">Sesi hari ini</span><span className="font-semibold text-navy">{myRecords.length} sesi</span></li>
             </ul>
           </SectionCard>
           </>)}
@@ -256,36 +361,54 @@ export default function AbsensiPage() {
 
         {/* Kolom kanan — rekap */}
         <div className="lg:col-span-2 space-y-4">
-          {isOwner && <SectionCard title={`Rekap Tim — ${dateLabel}`} action={<span className="text-[10px] font-bold text-slate-400">{summary.total} orang</span>}>
-            <div className="divide-y divide-slate-50">
-              {freelancers.map((u) => {
-                const r = records[u.id];
-                const status = r?.status || 'tidak-mengisi';
-                const dur = r ? minutesBetween(r.checkIn, r.checkOut) : 0;
-                return (
-                  <div key={u.id} className="py-3 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="h-9 w-9 rounded-full bg-navy text-white text-[11px] font-bold flex items-center justify-center shrink-0">{userFirst(state, u.id)}</span>
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-navy truncate">{u.name}</p>
-                        <p className="text-[10px] text-slate-400 truncate">
-                          {r?.status === 'hadir' || r?.status === 'selesai'
-                            ? `${r.checkIn} → ${r.checkOut || '…'} · ${decorName(r.decorId)}${dur > 0 ? ` · ${formatDuration(dur).label}` : ''}`
-                            : r?.status === 'tidak-bekerja' ? 'Menyatakan tidak bekerja' : 'Tidak mengisi'}
-                        </p>
+          {/* Owner: Rekap tim per decor */}
+          {isOwner && (
+            <SectionCard title={`Rekap Tim — ${dateLabel}`} action={<span className="text-[10px] font-bold text-slate-400">{allDecorWithTasks.length} decor aktif</span>}>
+              {allDecorWithTasks.length === 0 ? (
+                <p className="text-xs text-slate-400 py-4 text-center">Tidak ada decor dengan tugas hari ini.</p>
+              ) : (
+                <div className="space-y-3">
+                  {allDecorWithTasks.map((dt) => {
+                    const decorRecords = dayRecords.filter((r) => r.decorId === dt.decorId);
+                    return (
+                      <div key={dt.decorId} className="rounded-xl border border-slate-100 bg-slate-50 p-3.5">
+                        <p className="text-sm font-bold text-navy mb-2">{dt.decorName}</p>
+                        <div className="divide-y divide-slate-100">
+                          {Array.from(dt.assignees).map((uid) => {
+                            const userRecord = decorRecords.find((r) => r.userId === uid);
+                            const user = state.users.find((u) => u.id === uid);
+                            const dur = userRecord ? minutesBetween(userRecord.checkIn, userRecord.checkOut) : 0;
+                            const status = userRecord?.status || 'tidak-mengisi';
+                            return (
+                              <div key={uid} className="py-2.5 flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <span className="h-8 w-8 rounded-full bg-navy text-white text-[10px] font-bold flex items-center justify-center shrink-0">{userFirst(state, uid)}</span>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-semibold text-navy truncate">{user?.name || uid}</p>
+                                    <p className="text-[10px] text-slate-400 truncate">
+                                      {userRecord?.status === 'hadir' || userRecord?.status === 'selesai'
+                                        ? `${userRecord.checkIn} → ${userRecord.checkOut || '…'}${dur > 0 ? ` · ${formatDuration(dur).label}` : ''}`
+                                        : userRecord?.status === 'tidak-bekerja' ? 'Tidak bekerja' : 'Tidak mengisi'}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <StatusBadge color={ATTENDANCE_STATUS_COLOR[status]} label={ATTENDANCE_STATUS_LABEL[status]} />
+                                  {isOwner && userRecord && (
+                                    <button onClick={() => { deleteSession(userRecord.id); toast({ title: 'Session dihapus' }); }} className="text-slate-300 hover:text-red-500" aria-label="hapus"><X size={14} /></button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <StatusBadge color={ATTENDANCE_STATUS_COLOR[status]} label={ATTENDANCE_STATUS_LABEL[status]} />
-                      {isOwner && r && (
-                        <button onClick={() => { deleteSession(u.id, date); toast({ title: 'Session dihapus' }); }} className="text-slate-300 hover:text-red-500" aria-label="hapus"><X size={14} /></button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </SectionCard>}
+                    );
+                  })}
+                </div>
+              )}
+            </SectionCard>
+          )}
 
           {isOwner && flags.length > 0 && (
             <SectionCard title={<span className="flex items-center gap-1.5"><AlertTriangle size={13} className="text-red-500" /> Perlu Ditinjau</span>}>
@@ -354,11 +477,10 @@ export default function AbsensiPage() {
           {/* Freelancer: form ajukan koreksi */}
           {!isOwner && (
             <KoreksiForm
-              date={date}
-              my={my}
+              records={myRecords}
               userName={userName}
-              onSubmit={(patch) => {
-                requestCorrection(currentUser.id, date, patch);
+              onSubmit={(attendanceId, patch) => {
+                requestCorrection(attendanceId, patch);
                 toast({ title: 'Koreksi diajukan', description: 'Menunggu persetujuan pengelola.' });
               }}
             />
@@ -368,16 +490,22 @@ export default function AbsensiPage() {
           {isOwner && pendingCorrections.length > 0 && (
             <SectionCard title={<span className="flex items-center gap-1.5"><BadgeCheck size={13} className="text-gold" /> Koreksi Masuk ({pendingCorrections.length})</span>}>
               <ul className="space-y-3">
-                {pendingCorrections.map((c) => (
+                {pendingCorrections.map((c) => {
+                  const corrAtt = state.attendance.find((a) => a.id === c.attendanceId);
+                  const corrDecor = corrAtt?.decorId ? decors.find((d) => d.id === corrAtt.decorId) : undefined;
+                  return (
                   <li key={c.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3.5">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
                         <p className="text-sm font-bold text-navy">{userName(c.userId)} · {new Date(c.date + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</p>
+                        {corrDecor && (
+                          <p className="text-[10px] text-slate-400 mt-0.5">Decor: <span className="font-semibold text-navy">{corrDecor.name}</span></p>
+                        )}
                         <p className="text-[11px] text-slate-500 mt-0.5">
                           {c.requestedCheckIn && <>Masuk → <b>{c.requestedCheckIn}</b></>}
                           {c.requestedCheckIn && c.requestedCheckOut && ' · '}
                           {c.requestedCheckOut && <>Keluar → <b>{c.requestedCheckOut}</b></>}
-                          {c.reason && <> · <em>\"{c.reason}\"</em></>}
+                          {c.reason && <> · <em>"{c.reason}"</em></>}
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -408,17 +536,42 @@ export default function AbsensiPage() {
       {/* ═══ TAB: AUDIT (owner only) ═══ */}
       {sectionTab === 'audit' && isOwner && (
         <SectionCard title={<span className="flex items-center gap-1.5"><ShieldCheck size={13} /> Audit Log</span>}>
-          <div className="space-y-2.5">
+          <div className="hidden overflow-x-auto sm:block">
+            <table className="w-full min-w-[620px] text-left">
+              <thead>
+                <tr className="border-b border-slate-100 text-[9px] uppercase tracking-widest text-slate-400">
+                  <th className="py-2 pr-3">Waktu</th>
+                  <th className="py-2 pr-3">Pengguna</th>
+                  <th className="py-2 pr-3">Aksi</th>
+                  <th className="py-2">Detail</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentAudit.map((a) => {
+                  const meta = AUDIT_LABEL[a.action] || { label: a.action, color: 'bg-slate-100 text-slate-600' };
+                  return (
+                    <tr key={a.id} className="border-b border-slate-50 text-xs text-slate-600">
+                      <td className="py-3 pr-3 whitespace-nowrap text-[10px] text-slate-400">{new Date(a.at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} · {new Date(a.at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</td>
+                      <td className="py-3 pr-3 font-bold text-navy">{userName(a.userId)}</td>
+                      <td className="py-3 pr-3"><span className={cn("inline-flex rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-widest", meta.color)}>{meta.label}</span></td>
+                      <td className="py-3 max-w-[280px] truncate">{a.detail || '—'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="space-y-2.5 sm:hidden">
             {recentAudit.length === 0 && <p className="text-xs text-slate-400 py-4 text-center">Belum ada aktivitas tercatat.</p>}
             {recentAudit.map((a) => {
               const meta = AUDIT_LABEL[a.action] || { label: a.action, color: 'bg-slate-100 text-slate-600' };
               return (
-                <div key={a.id} className="flex items-start gap-3">
+                <div key={a.id} className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
+                  <div className="flex items-start justify-between gap-2">
                   <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest shrink-0 mt-0.5", meta.color)}>{meta.label}</span>
-                  <div className="min-w-0">
-                    <p className="text-sm text-slate-600"><span className="font-bold text-navy">{userName(a.userId)}</span>{a.detail ? ` · ${a.detail}` : ''}</p>
-                    <p className="text-[9px] text-slate-400"><Clock4 size={9} className="inline" /> {new Date(a.at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} · {new Date(a.at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</p>
+                  <p className="text-[9px] text-slate-400"><Clock4 size={9} className="inline" /> {new Date(a.at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} · {new Date(a.at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
+                  <p className="mt-2 text-xs text-slate-600"><span className="font-bold text-navy">{userName(a.userId)}</span>{a.detail ? ` · ${a.detail}` : ''}</p>
                 </div>
               );
             })}
@@ -428,46 +581,58 @@ export default function AbsensiPage() {
       )}
 
       {/* Dialog Tidak Bekerja */}
-      {showNoWork && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowNoWork(false)}>
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-navy">Tidak Bekerja Hari Ini</h3>
-            <p className="text-xs text-slate-400 mt-1">Konfirmasi bahwa Anda tidak bekerja hari ini.</p>
-            <div className="flex gap-2 mt-4">
-              <Button variant="outline" className="flex-1" onClick={() => setShowNoWork(false)}>Batal</Button>
-              <Button className="flex-1 bg-navy text-white" onClick={() => {
-                declareNoWork(currentUser.id, date);
-                toast({ title: 'Dicatat' });
-                setShowNoWork(false);
-              }}>Konfirmasi</Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog open={showNoWork} onOpenChange={setShowNoWork}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base text-navy">Tidak Bekerja Hari Ini</DialogTitle>
+            <DialogDescription className="text-xs text-slate-400">Konfirmasi bahwa Anda tidak bekerja hari ini.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNoWork(false)}>Batal</Button>
+            <Button className="bg-navy text-white" onClick={() => {
+              declareNoWork(currentUser.id, date);
+              toast({ title: 'Dicatat' });
+              setShowNoWork(false);
+            }}>Konfirmasi</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-/* ─── Koreksi Form (freelancer) ───────────────────────────────────────── */
+/* ─── Koreksi Form (freelancer) — multi-sesi ──────────────────────────── */
 function KoreksiForm({
-  date, my, userName, onSubmit,
+  records, userName, onSubmit,
 }: {
-  date: string;
-  my?: Attendance;
+  records: Attendance[];
   userName: (id: string) => string;
-  onSubmit: (patch: { requestedCheckIn?: string; requestedCheckOut?: string; reason: string; detail?: string }) => void;
+  onSubmit: (attendanceId: string, patch: { requestedCheckIn?: string; requestedCheckOut?: string; reason: string; detail?: string }) => void;
 }) {
-  const [checkIn, setCheckIn] = useState(my?.checkIn || '');
-  const [checkOut, setCheckOut] = useState(my?.checkOut || '');
+  const [selectedId, setSelectedId] = useState('');
+  const [checkIn, setCheckIn] = useState('');
+  const [checkOut, setCheckOut] = useState('');
   const [reason, setReason] = useState('');
   const [detail, setDetail] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const canSubmit = reason.trim().length >= 3 && (checkIn || checkOut);
+  // Set default selection to first record
+  const selectedRecord = records.find((r) => r.id === selectedId);
+
+  const handleSelect = (id: string) => {
+    setSelectedId(id);
+    const rec = records.find((r) => r.id === id);
+    if (rec) {
+      setCheckIn(rec.checkIn || '');
+      setCheckOut(rec.checkOut || '');
+    }
+  };
+
+  const canSubmit = selectedId && reason.trim().length >= 3 && (checkIn || checkOut);
 
   const handleSubmit = () => {
-    if (!canSubmit) return;
-    onSubmit({
+    if (!canSubmit || !selectedId) return;
+    onSubmit(selectedId, {
       requestedCheckIn: checkIn || undefined,
       requestedCheckOut: checkOut || undefined,
       reason: reason.trim(),
@@ -488,34 +653,75 @@ function KoreksiForm({
     );
   }
 
+  if (records.length === 0) {
+    return (
+      <SectionCard title={<span className="flex items-center gap-1.5"><FileEdit size={13} className="text-gold" /> Ajukan Koreksi</span>}>
+        <p className="text-xs text-slate-400 py-4 text-center">Tidak ada sesi absensi hari ini untuk dikoreksi.</p>
+      </SectionCard>
+    );
+  }
+
   return (
     <SectionCard title={<span className="flex items-center gap-1.5"><FileEdit size={13} className="text-gold" /> Ajukan Koreksi</span>}>
-      <p className="text-xs text-slate-400 mb-3">Lupa absen masuk/keluar? Ajukan koreksi di sini. Pengelola akan meninjau.</p>
-      <div className="grid sm:grid-cols-2 gap-3">
-        <div>
-          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Jam Masuk yang Benar</Label>
-          <Input type="time" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} className="mt-1" placeholder="HH:mm" />
+      <p className="text-xs text-slate-400 mb-3">Lupa absen masuk/keluar? Pilih sesi lalu ajukan koreksi. Pengelola akan meninjau.</p>
+
+      {/* Pilih sesi */}
+      <div>
+        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Pilih Sesi Absensi *</Label>
+        <div className="space-y-2 mt-2">
+          {records.map((r) => (
+            <button
+              key={r.id}
+              onClick={() => handleSelect(r.id)}
+              className={cn(
+                "w-full text-left rounded-xl border p-3 transition-all",
+                selectedId === r.id ? "border-navy bg-navy/5 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300",
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold text-navy">{r.decorId ? 'Decor' : 'Sesi'}</p>
+                  <p className="text-[10px] text-slate-400">
+                    Masuk: {r.checkIn || '—'} · Keluar: {r.checkOut || '—'}
+                    {r.status === 'selesai' && <> · {formatDuration(minutesBetween(r.checkIn, r.checkOut)).label}</>}
+                  </p>
+                </div>
+                <StatusBadge color={ATTENDANCE_STATUS_COLOR[r.status]} label={ATTENDANCE_STATUS_LABEL[r.status]} />
+              </div>
+            </button>
+          ))}
         </div>
-        <div>
-          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Jam Keluar yang Benar</Label>
-          <Input type="time" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} className="mt-1" placeholder="HH:mm" />
-        </div>
       </div>
-      <div className="mt-3">
-        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Alasan * <span className="text-slate-300 normal-case">(minimal 3 karakter)</span></Label>
-        <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="cth. Lupa absen masuk karena jaringan error" className="mt-1" />
-      </div>
-      <div className="mt-3">
-        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Detail Tambahan <span className="text-slate-300 normal-case">(opsional)</span></Label>
-        <Input value={detail} onChange={(e) => setDetail(e.target.value)} placeholder="Keterangan lebih lanjut" className="mt-1" />
-      </div>
-      <Button
-        className="mt-4 w-full bg-navy hover:bg-gold text-white"
-        disabled={!canSubmit}
-        onClick={handleSubmit}
-      >
-        <FileEdit size={15} className="mr-2" /> Kirim Koreksi
-      </Button>
+
+      {selectedRecord && (
+        <>
+          <div className="grid sm:grid-cols-2 gap-3 mt-4">
+            <div>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Jam Masuk yang Benar</Label>
+              <Input type="time" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} className="mt-1" placeholder="HH:mm" />
+            </div>
+            <div>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Jam Keluar yang Benar</Label>
+              <Input type="time" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} className="mt-1" placeholder="HH:mm" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Alasan * <span className="text-slate-300 normal-case">(minimal 3 karakter)</span></Label>
+            <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="cth. Lupa absen masuk karena jaringan error" className="mt-1" />
+          </div>
+          <div className="mt-3">
+            <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Detail Tambahan <span className="text-slate-300 normal-case">(opsional)</span></Label>
+            <Input value={detail} onChange={(e) => setDetail(e.target.value)} placeholder="Keterangan lebih lanjut" className="mt-1" />
+          </div>
+          <Button
+            className="mt-4 w-full bg-navy hover:bg-gold text-white"
+            disabled={!canSubmit}
+            onClick={handleSubmit}
+          >
+            <FileEdit size={15} className="mr-2" /> Kirim Koreksi
+          </Button>
+        </>
+      )}
     </SectionCard>
   );
 }
