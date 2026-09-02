@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { ClipboardList, Trash2, Clock4, Camera } from 'lucide-react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { ClipboardList, Trash2, Clock4, Camera, PenLine, ListChecks } from 'lucide-react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useOps, userFirst } from '@/lib/ops/store';
+import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,10 +24,29 @@ const ACTIVITY_STATUS = [
 
 type ActStatus = typeof ACTIVITY_STATUS[number]['value'];
 
+const TAB_LIST = [
+  { value: 'input', label: 'Input', icon: PenLine },
+  { value: 'riwayat', label: 'Riwayat', icon: ListChecks },
+] as const;
+
+type TabValue = typeof TAB_LIST[number]['value'];
+const VALID_TABS: TabValue[] = ['input', 'riwayat'];
+
 export default function KegiatanPage() {
   const { state, currentUser, selectedDecor, decors, addActivity, deleteActivity, activities, addPhoto, tasks } = useOps();
   const isManager = currentUser.role === 'owner' || currentUser.role === 'admin';
   const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const rawTab = searchParams.get('tab');
+  const activeTab: TabValue = (rawTab && VALID_TABS.includes(rawTab as TabValue)) ? (rawTab as TabValue) : 'input';
+
+  const setTab = useCallback((newTab: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('tab', newTab);
+    router.push(`/ops/kegiatan?${params.toString()}`, { scroll: false });
+  }, [searchParams, router]);
 
   const [type, setType] = useState('');
   const [description, setDescription] = useState('');
@@ -97,89 +118,167 @@ export default function KegiatanPage() {
         subtitle="Catat apa yang benar-benar Anda kerjakan hari ini"
       />
 
-      <div className="grid lg:grid-cols-5 gap-4">
-        {/* Form */}
-        <SectionCard className="lg:col-span-2" title="Catat Kegiatan Baru">
-          <form onSubmit={submit} className="space-y-4">
-            <div>
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Decor</Label>
-              <Select value={decorId} onValueChange={() => {}} disabled>
-                <SelectTrigger className="mt-1">
-                  <SelectValue>{selectedDecor?.name || 'Pilih decor'}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {decorList.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Jenis Kegiatan</Label>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="Pilih jenis" /></SelectTrigger>
-                <SelectContent>
-                  {state.settings.activityTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Kegiatan</Label>
-              <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="cth. Pemasangan backdrop panggung utama" className="mt-1" rows={2} required />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status</Label>
-                <Select value={status} onValueChange={(v) => setStatus(v as ActStatus)}>
-                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {ACTIVITY_STATUS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Terkait Tugas</Label>
-                <Select value={taskId} onValueChange={setTaskId}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="—" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Tidak ada</SelectItem>
-                    {decorTasks.map((t) => <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div>
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Catatan</Label>
-              <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Detail tambahan..." className="mt-1" rows={2} />
-            </div>
-
-            <div>
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Foto</Label>
-              <input type="file" accept="image/*" onChange={handleFile} className="mt-1 block w-full text-[11px] text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-navy file:px-3 file:py-1.5 file:text-[10px] file:font-bold file:text-white" />
-              {photo && (
-                <img src={photo} alt="preview" className="mt-2 h-24 w-24 object-cover rounded-xl border border-slate-200" />
+      {/* Tab bar */}
+      <div className="flex gap-1.5 mb-4 overflow-x-auto no-scrollbar pb-1">
+        {TAB_LIST.map((t) => {
+          const isActive = activeTab === t.value;
+          return (
+            <button
+              key={t.value}
+              onClick={() => setTab(t.value)}
+              className={cn(
+                "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border shrink-0 select-none",
+                isActive ? "bg-navy text-white border-navy shadow-sm" : "bg-white text-slate-400 border-slate-200 hover:border-slate-300 hover:text-slate-500",
               )}
-            </div>
+            >
+              <t.icon size={14} /> {t.label}
+            </button>
+          );
+        })}
+      </div>
 
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1 text-[10px] text-slate-400"><Clock4 size={11} /> Waktu otomatis: sekarang</span>
-              <Button type="submit" className="bg-navy hover:bg-gold text-white"><Camera size={14} className="mr-1" /> Simpan Kegiatan</Button>
-            </div>
-          </form>
-        </SectionCard>
+      {/* ═══ TAB: INPUT ═══ */}
+      {activeTab === 'input' && (
+        <div className="grid lg:grid-cols-2 gap-4">
+          {/* Form */}
+          <SectionCard title="Catat Kegiatan Baru">
+            {!selectedDecor ? (
+              <EmptyState
+                icon={<PenLine size={20} />}
+                title="Pilih decor terlebih dahulu"
+                sub="Pilih decor dari menu Current Decor di bagian atas."
+              />
+            ) : (
+              <form onSubmit={submit} className="space-y-4">
+                <div>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Decor</Label>
+                  <Select value={decorId} onValueChange={() => {}} disabled>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue>{selectedDecor?.name || 'Pilih decor'}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {decorList.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-        {/* Activity list */}
-        <div className="lg:col-span-3">
+                <div>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Jenis Kegiatan</Label>
+                  <Select value={type} onValueChange={setType}>
+                    <SelectTrigger className="mt-1"><SelectValue placeholder="Pilih jenis" /></SelectTrigger>
+                    <SelectContent>
+                      {state.settings.activityTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Kegiatan</Label>
+                  <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="cth. Pemasangan backdrop panggung utama" className="mt-1" rows={2} required />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status</Label>
+                    <Select value={status} onValueChange={(v) => setStatus(v as ActStatus)}>
+                      <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {ACTIVITY_STATUS.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Terkait Tugas</Label>
+                    <Select value={taskId} onValueChange={setTaskId}>
+                      <SelectTrigger className="mt-1"><SelectValue placeholder="—" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Tidak ada</SelectItem>
+                        {decorTasks.map((t) => <SelectItem key={t.id} value={t.id}>{t.title}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Catatan</Label>
+                  <Textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Detail tambahan..." className="mt-1" rows={2} />
+                </div>
+
+                <div>
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Foto</Label>
+                  <input type="file" accept="image/*" onChange={handleFile} className="mt-1 block w-full text-[11px] text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-navy file:px-3 file:py-1.5 file:text-[10px] file:font-bold file:text-white" />
+                  {photo && (
+                    <img src={photo} alt="preview" className="mt-2 h-24 w-24 object-cover rounded-xl border border-slate-200" />
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1 text-[10px] text-slate-400"><Clock4 size={11} /> Waktu otomatis: sekarang</span>
+                  <Button type="submit" className="bg-navy hover:bg-gold text-white"><Camera size={14} className="mr-1" /> Simpan Kegiatan</Button>
+                </div>
+              </form>
+            )}
+          </SectionCard>
+
+          {/* Quick recent list on input tab */}
           <SectionCard
-            title={decorId ? `Riwayat — ${selectedDecor?.name}` : 'Riwayat Kegiatan'}
+            title={decorId ? `Terakhir — ${selectedDecor?.name}` : 'Kegiatan Terakhir'}
             action={decorId && <span className="text-[10px] font-bold text-slate-400">{decorActivities.length} aktivitas</span>}
           >
             {decorActivities.length === 0 ? (
-              <EmptyState icon={<ClipboardList size={20} />} title="Belum ada kegiatan untuk decor ini" sub="Catat kegiatan pertama Anda." />
+              <EmptyState icon={<ClipboardList size={20} />} title="Belum ada kegiatan" sub="Kegiatan yang baru dicatat akan muncul di sini." />
             ) : (
               <>
+                <ul className="space-y-3">
+                  {decorActivities.slice(0, 5).map((a) => {
+                    const user = state.users.find((u) => u.id === a.userId);
+                    const st = ACTIVITY_STATUS.find((s) => s.value === a.status);
+                    return (
+                      <li key={a.id} className="bg-slate-50 rounded-xl p-3.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="h-7 w-7 rounded-full bg-navy text-white text-[10px] font-bold flex items-center justify-center shrink-0">{userFirst(state, a.userId)}</span>
+                            <div className="min-w-0">
+                              <p className="text-[11px] font-bold text-navy">{user?.name || 'User'}</p>
+                              <p className="text-[9px] text-slate-400 flex items-center gap-1"><Clock4 size={9} /> {formatDateTime(a.at)}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="px-2 py-0.5 rounded-full bg-gold/15 text-gold text-[9px] font-bold uppercase tracking-widest">{a.activityType}</span>
+                            <StatusBadge color={st?.color || 'bg-slate-400'} label={st?.label || a.status} />
+                          </div>
+                        </div>
+                        <p className="text-sm text-slate-700 mt-2">{a.description}</p>
+                        {a.note && <p className="text-[11px] text-slate-500 italic mt-1">"{a.note}"</p>}
+                      </li>
+                    );
+                  })}
+                </ul>
+                {decorActivities.length > 5 && (
+                  <Button
+                    variant="outline"
+                    className="w-full mt-3 text-[10px] uppercase tracking-widest font-bold"
+                    onClick={() => setTab('riwayat')}
+                  >
+                    Lihat Semua Riwayat →
+                  </Button>
+                )}
+              </>
+            )}
+          </SectionCard>
+        </div>
+      )}
+
+      {/* ═══ TAB: RIWAYAT ═══ */}
+      {activeTab === 'riwayat' && (
+        <SectionCard
+          title={decorId ? `Riwayat — ${selectedDecor?.name}` : 'Riwayat Kegiatan'}
+          action={decorId && <span className="text-[10px] font-bold text-slate-400">{decorActivities.length} aktivitas</span>}
+        >
+          {decorActivities.length === 0 ? (
+            <EmptyState icon={<ClipboardList size={20} />} title="Belum ada kegiatan untuk decor ini" sub="Catat kegiatan pertama Anda." />
+          ) : (
+            <>
               <ul className="space-y-3">
                 {shownActivities.map((a) => {
                   const user = state.users.find((u) => u.id === a.userId);
@@ -205,17 +304,16 @@ export default function KegiatanPage() {
                       </div>
                       <p className="text-sm text-slate-700 mt-2">{a.description}</p>
                       {related && <p className="text-[10px] text-slate-400 mt-1">Tugas: <span className="font-semibold text-navy">{related.title}</span></p>}
-                      {a.note && <p className="text-[11px] text-slate-500 italic mt-1">“{a.note}”</p>}
+                      {a.note && <p className="text-[11px] text-slate-500 italic mt-1">"{a.note}"</p>}
                     </li>
                   );
                 })}
               </ul>
               <Pagination page={page} totalPages={activityPageCount} onPage={setPage} />
-              </>
-            )}
-          </SectionCard>
-        </div>
-      </div>
+            </>
+          )}
+        </SectionCard>
+      )}
     </div>
   );
 }
