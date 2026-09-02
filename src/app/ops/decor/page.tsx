@@ -181,9 +181,15 @@ function DecorCard({
       ) : null}
 
       <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-50">
-        <Button size="sm" variant="outline" onClick={onSelect} className="flex-1 text-[10px] uppercase tracking-widest">
-          Pilih
-        </Button>
+        {d.status !== 'selesai' && d.status !== 'dibatalkan' ? (
+          <Button size="sm" variant="outline" onClick={onSelect} className="flex-1 text-[10px] uppercase tracking-widest">
+            Pilih
+          </Button>
+        ) : (
+          <span className="flex-1 text-center text-[10px] font-bold uppercase tracking-widest text-slate-300">
+            {d.status === 'selesai' ? '✓ Selesai' : '✗ Dibatalkan'}
+          </span>
+        )}
         {onEdit && <Button size="icon" variant="ghost" className="text-slate-400 h-9 w-9" onClick={onEdit} aria-label="Edit">
           <Pencil size={15} />
         </Button>}

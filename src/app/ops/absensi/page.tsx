@@ -199,8 +199,18 @@ export default function AbsensiPage() {
                 <Button
                   className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-14 text-base font-bold"
                   onClick={() => {
+                    const now = new Date();
+                    const hour = now.getHours();
+                    if (hour < 5 || hour >= 23) {
+                      toast({ title: 'Absen gagal', description: 'Absensi hanya tersedia pukul 05:00 – 23:00 WIB. Jika terlambat, ajukan koreksi ke pengelola.', variant: 'destructive' });
+                      return;
+                    }
                     const rec = clockIn(currentUser.id, date, undefined, undefined, opsDevice());
-                    if (rec) toast({ title: 'Hadir tercatat', description: `${rec.checkIn} WIB` });
+                    if (rec) {
+                      toast({ title: 'Hadir tercatat', description: `${rec.checkIn} WIB` });
+                    } else {
+                      toast({ title: 'Gagal mencatat', description: 'Anda sudah absen hari ini atau terjadi kesalahan.', variant: 'destructive' });
+                    }
                   }}
                 >
                   <LogIn size={18} className="mr-2" /> Hadir

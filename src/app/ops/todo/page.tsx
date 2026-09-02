@@ -2,6 +2,10 @@
 
 import React, { useMemo, useState, useCallback } from 'react';
 import { Plus, Trash2, CheckSquare, Square, ListChecks, LayoutList, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useOps, userFirst } from '@/lib/ops/store';
 import { TASK_STATUS_LABEL, TASK_STATUS_COLOR, type Task, type TaskStatus } from '@/lib/ops/types';
@@ -47,6 +51,7 @@ export default function TodoPage() {
   const [newTitle, setNewTitle] = useState('');
   const [newAssignee, setNewAssignee] = useState<string>('');
   const [newStatus, setNewStatus] = useState<TaskStatus>('belum');
+  const [confirmToggle, setConfirmToggle] = useState<Task | null>(null);
 
   const decorTasks = useMemo(() => {
     if (!selectedDecor) return [];
@@ -152,7 +157,7 @@ export default function TodoPage() {
                   const isDone = t.status === 'selesai';
                   return (
                     <li key={t.id} className="py-3 flex items-center gap-3">
-                      <button onClick={() => { toggleTask(t.id); }} className="shrink-0 text-slate-300 hover:text-emerald-500" aria-label="toggle">
+                      <button onClick={() => setConfirmToggle(t)} className="shrink-0 text-slate-300 hover:text-emerald-500" aria-label="toggle">
                         {isDone ? <CheckSquare size={20} className="text-emerald-500" /> : <Square size={20} />}
                       </button>
                       <div className="flex-1 min-w-0">
@@ -246,8 +251,30 @@ export default function TodoPage() {
             </SectionCard>
           </div>
           )}
-        </div>
-      )}
+      {/* Confirm toggle dialog */}
+      <AlertDialog open={!!confirmToggle} onOpenChange={(open) => !open && setConfirmToggle(null)}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-navy">
+              {confirmToggle?.status === 'selesai' ? 'Batalkan tugas ini?' : 'Tandai tugas selesai?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmToggle?.status === 'selesai'
+                ? `"${confirmToggle?.title}" akan dikembalikan ke status belum dikerjakan.`
+                : `Tandai "${confirmToggle?.title}" sebagai selesai?`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={() => { if (confirmToggle) { toggleTask(confirmToggle.id); setConfirmToggle(null); } }}
+            >
+              Ya, Lanjutkan
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
