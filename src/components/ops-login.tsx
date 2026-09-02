@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lock, User, LogIn, Eye, EyeOff } from 'lucide-react';
-import { opsLogin, roleLabel, type OpsRole, OPS_ROLE_PASSWORDS } from '@/lib/ops/auth';
+import { opsLogin, roleLabel, type OpsRole } from '@/lib/ops/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -102,14 +102,14 @@ export function OpsLogin() {
             {showHint ? 'Sembunyikan' : 'Demo: lihat password per peran'}
           </button>
           {showHint && (
-            <div className="mt-2 rounded-xl bg-slate-50 border border-slate-100 p-3 text-[10px] text-slate-500 space-y-1">
-              {(Object.entries(OPS_ROLE_PASSWORDS) as [OpsRole, string][]).map(([role, pw]) => (
-                <p key={role} className="flex justify-between">
-                  <span className="font-black uppercase tracking-widest text-slate-400">{roleLabel(role)}</span>
-                  <code className="font-mono text-navy">{pw}</code>
-                </p>
-              ))}
-              <p className="text-slate-400 pt-1">Role mengubah menu &amp; akses di dalam OPS.</p>
+            <div className="mt-2 rounded-xl bg-slate-50 border border-slate-100 p-3 text-[10px] text-slate-500 space-y-1.5">
+              <p className="font-bold text-navy mb-1">Akun tersedia:</p>
+              <div className="flex justify-between"><span className="text-slate-400">Owner</span><code className="font-mono text-navy">owner / owner123</code></div>
+              <div className="flex justify-between"><span className="text-slate-400">Admin</span><code className="font-mono text-navy">admin / admin2026</code></div>
+              <div className="flex justify-between"><span className="text-slate-400">Kru</span><code className="font-mono text-navy">rian123 / freelancer2026</code></div>
+              <div className="flex justify-between"><span className="text-slate-400">Kru</span><code className="font-mono text-navy">fikri123 / freelancer2026</code></div>
+              <div className="flex justify-between"><span className="text-slate-400">Kru</span><code className="font-mono text-navy">doni123 / freelancer2026</code></div>
+              <p className="text-slate-400 pt-1">Password menentukan role &amp; akses menu.</p>
             </div>
           )}
         </div>

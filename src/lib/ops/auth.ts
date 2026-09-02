@@ -16,23 +16,9 @@ export const OPS_ROLE_PASSWORDS: Record<OpsRole, string> = {
 const OPS_ACCOUNTS: Record<string, { id: string; role: OpsRole }> = {
   owner: { id: 'u1', role: 'owner' },
   admin: { id: 'u2', role: 'admin' },
-  jimmy: { id: 'u3', role: 'freelancer' },
-  rian: { id: 'u4', role: 'freelancer' },
-  fikri: { id: 'u5', role: 'freelancer' },
-  doni: { id: 'u6', role: 'freelancer' },
-  andre: { id: 'u7', role: 'freelancer' },
-  bimo: { id: 'u8', role: 'freelancer' },
-  cahya: { id: 'u9', role: 'freelancer' },
-  dewi: { id: 'u10', role: 'freelancer' },
-  ega: { id: 'u11', role: 'freelancer' },
-  farhan: { id: 'u12', role: 'freelancer' },
-  gilang: { id: 'u13', role: 'freelancer' },
-  hendra: { id: 'u14', role: 'freelancer' },
-  iqbal: { id: 'u15', role: 'freelancer' },
-  jefri: { id: 'u16', role: 'freelancer' },
-  kevin: { id: 'u17', role: 'freelancer' },
-  lukman: { id: 'u18', role: 'freelancer' },
-  mega: { id: 'u19', role: 'freelancer' },
+  rian123: { id: 'u3', role: 'freelancer' },
+  fikri123: { id: 'u4', role: 'freelancer' },
+  doni123: { id: 'u5', role: 'freelancer' },
 };
 
 export function roleLabel(role: OpsRole): string {
