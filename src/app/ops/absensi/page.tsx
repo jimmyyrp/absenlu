@@ -53,7 +53,7 @@ export default function AbsensiPage() {
   const router = useRouter();
 
   const rawTab = searchParams.get('tab');
-  const sectionTab: SectionTab = (rawTab && VALID_TABS.includes(rawTab)) ? (rawTab as SectionTab) : 'status';
+  const requestedTab: SectionTab = (rawTab && VALID_TABS.includes(rawTab)) ? (rawTab as SectionTab) : 'status';
 
   const setSectionTab = useCallback((newTab: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -183,6 +183,7 @@ export default function AbsensiPage() {
 
   // Freelancer hanya lihat tab: status & rekap
   const visibleTabs = isOwner ? SECTION_TABS : SECTION_TABS.filter((t) => t.value === 'status' || t.value === 'rekap' || t.value === 'koreksi');
+  const sectionTab = visibleTabs.some((tab) => tab.value === requestedTab) ? requestedTab : 'status';
 
   return (
     <div>

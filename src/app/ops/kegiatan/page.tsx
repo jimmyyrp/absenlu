@@ -15,6 +15,7 @@ import {
 import { PageHeader, SectionCard, StatusBadge, EmptyState, formatDateTime, Pagination } from '../ops-ui';
 import { useToast } from '@/hooks/use-toast';
 import { useSubmitLock } from '@/hooks/use-submit-lock';
+import { OpsTabs } from '@/components/OpsTabs';
 
 const ACTIVITY_STATUS = [
   { value: 'selesai', label: 'Selesai', color: 'bg-emerald-500' },
@@ -96,7 +97,7 @@ export default function KegiatanPage() {
       const act = addActivity({
         decorId,
         userId: state.currentUserId,
-        taskId: taskId || undefined,
+        taskId: taskId && taskId !== 'none' ? taskId : undefined,
         activityType: type || 'Lainnya',
         description: description.trim(),
         status,
@@ -116,24 +117,7 @@ export default function KegiatanPage() {
         subtitle="Catat apa yang benar-benar Anda kerjakan hari ini"
       />
 
-      {/* Tab bar */}
-      <div className="flex gap-1.5 mb-4 overflow-x-auto no-scrollbar pb-1">
-        {TAB_LIST.map((t) => {
-          const isActive = activeTab === t.value;
-          return (
-            <button
-              key={t.value}
-              onClick={() => setTab(t.value)}
-              className={cn(
-                "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border shrink-0 select-none",
-                isActive ? "bg-navy text-white border-navy shadow-sm" : "bg-white text-slate-400 border-slate-200 hover:border-slate-300 hover:text-slate-500",
-              )}
-            >
-              <t.icon size={14} /> {t.label}
-            </button>
-          );
-        })}
-      </div>
+      <OpsTabs items={TAB_LIST} value={activeTab} onChange={setTab} className="mb-4" />
 
       {/* ═══ TAB: INPUT ═══ */}
       {activeTab === 'input' && (

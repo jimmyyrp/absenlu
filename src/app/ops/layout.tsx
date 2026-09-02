@@ -4,13 +4,15 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { opsAuthed, opsLogout } from '@/lib/ops/auth';
-import {
-  LayoutDashboard, CalendarRange, ListChecks, Clock4, Wallet, Image, RotateCcw, Settings, LogOut, HelpCircle,
-  BarChart3, FileText, ClipboardList, MoreHorizontal,
-} from 'lucide-react';
+import { RotateCcw, LogOut, HelpCircle, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { OpsProvider, useOps } from '@/lib/ops/store';
 import { DECOR_STATUS_COLOR } from '@/lib/ops/types';
+import {
+  FREELANCER_NAV, MANAGER_NAV, OWNER_NAV, SECONDARY_NAV,
+  FREELANCER_ROUTES, MANAGER_ROUTES, OWNER_ROUTES,
+  isActivePath, isAllowedRoute,
+} from './navigation';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -20,34 +22,9 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { OpsHelpModal } from '@/components/ops-help-modal';
-
-/* ─── Nav definitions ─────────────────────────────────────────────────── */
-const PRIMARY_NAV = [
-  { label: 'Dasbor', href: '/ops', icon: LayoutDashboard },
-  { label: 'Decor', href: '/ops/decor', icon: CalendarRange },
-  { label: 'Tugas', href: '/ops/todo', icon: ListChecks },
-  { label: 'Absensi', href: '/ops/absensi', icon: Clock4 },
-  { label: 'Keuangan', href: '/ops/pengeluaran', icon: Wallet },
-];
-
-const SECONDARY_NAV = [
-  { label: 'Kegiatan', href: '/ops/kegiatan', icon: ClipboardList },
-  { label: 'Analisa', href: '/ops/analisa', icon: BarChart3 },
-  { label: 'Laporan', href: '/ops/laporan', icon: FileText },
-];
-
-const FREELANCER_NAV = [
-  ...PRIMARY_NAV,
-  { label: 'Dokumentasi', href: '/ops/dokumentasi', icon: Image },
-];
-
-const MANAGER_NAV = [...PRIMARY_NAV, ...SECONDARY_NAV];
-const OWNER_NAV = [...MANAGER_NAV, { label: 'Pengaturan', href: '/ops/pengaturan', icon: Settings }];
-
-/* ─── Helpers ─────────────────────────────────────────────────────────── */
-function isActivePath(pathname: string, href: string) {
-  return href === '/ops' ? pathname === '/ops' : pathname.startsWith(href);
-}
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 function DecorSelector() {
   const { activeDecors, selectedDecorId, selectDecor } = useOps();
@@ -143,16 +120,25 @@ function BottomNav() {
           })}
           {/* Overflow menu for managers */}
           {hasOverflow && (
-            <Link
-              href={overflowItems[0]?.href || '/ops/kegiatan'}
-              className={cn(
-                "flex flex-col items-center gap-1 px-2 py-2.5 flex-1 min-w-0 transition-colors",
-                isOverflowActive ? "text-navy" : "text-slate-400 hover:text-navy",
-              )}
-            >
-              <MoreHorizontal size={20} strokeWidth={isOverflowActive ? 2.5 : 2} />
-              <span className={cn("text-[9px] font-black uppercase tracking-wider", isOverflowActive ? "text-navy" : "")}>Lainnya</span>
-            </Link>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button type="button" className={cn(
+                  "flex flex-1 min-w-0 flex-col items-center gap-1 px-2 py-2.5 transition-colors",
+                  isOverflowActive ? "text-navy" : "text-slate-400 hover:text-navy",
+                )} aria-label="Buka menu lainnya">
+                  <MoreHorizontal size={20} strokeWidth={isOverflowActive ? 2.5 : 2} />
+                  <span className="text-[9px] font-black uppercase tracking-wider">Lainnya</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" side="top" className="mb-2 min-w-[180px]">
+                <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-slate-400">Menu OPS</DropdownMenuLabel>
+                {overflowItems.map((item) => (
+                  <DropdownMenuItem key={item.href} asChild className="py-2.5">
+                    <Link href={item.href}><item.icon size={15} />{item.label}</Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </nav>
@@ -209,11 +195,11 @@ function Shell({ children }: { children: React.ReactNode }) {
   const allowedRoutes = isOwner ? ownerRoutes : isManager ? managerRoutes : freelancerRoutes;
 
   useEffect(() => {
-    const allowed = allowedRoutes.some((route) => route === '/ops' ? pathname === route : pathname.startsWith(route));
+    const allowed = isAllowedRoute(pathname, allowedRoutes);
     if (!allowed) router.replace('/ops');
   }, [allowedRoutes, pathname, router]);
 
-  if (!allowedRoutes.some((route) => route === '/ops' ? pathname === route : pathname.startsWith(route))) {
+  if (!isAllowedRoute(pathname, allowedRoutes)) {
     return null;
   }
 
