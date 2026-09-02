@@ -29,10 +29,11 @@ type StatusTab = typeof STATUS_TABS[number]['value'];
 const VALID_TABS: string[] = ['all', ...STATUSES];
 
 export default function TodoPage() {
-  const { state, selectedDecor, tasks, addTask, updateTask, deleteTask, toggleTask } = useOps();
+  const { state, currentUser, selectedDecor, tasks, addTask, updateTask, deleteTask, toggleTask } = useOps();
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const isManager = currentUser.role === 'owner' || currentUser.role === 'admin';
 
   const rawTab = searchParams.get('tab');
   const statusTab: StatusTab = (rawTab && VALID_TABS.includes(rawTab)) ? (rawTab as StatusTab) : 'all';
@@ -47,10 +48,12 @@ export default function TodoPage() {
   const [newAssignee, setNewAssignee] = useState<string>('');
   const [newStatus, setNewStatus] = useState<TaskStatus>('belum');
 
-  const decorTasks = useMemo(
-    () => (selectedDecor ? tasks.filter((t) => t.decorId === selectedDecor.id).sort((a, b) => a.order - b.order) : []),
-    [tasks, selectedDecor],
-  );
+  const decorTasks = useMemo(() => {
+    if (!selectedDecor) return [];
+    let list = tasks.filter((t) => t.decorId === selectedDecor.id);
+    if (!isManager) list = list.filter((t) => t.assigneeId === currentUser.id);
+    return list.sort((a, b) => a.order - b.order);
+  }, [tasks, selectedDecor, isManager, currentUser.id],);
 
   const filteredTasks = useMemo(
     () => statusTab === 'all' ? decorTasks : decorTasks.filter((t) => t.status === statusTab),
@@ -101,10 +104,10 @@ export default function TodoPage() {
       {!selectedDecor ? (
         <EmptyState icon={<ListChecks size={20} />} title="Belum ada decor yang dipilih" sub="Pilih decor dari menu Current Decor di bagian atas." />
       ) : (
-        <div className="grid lg:grid-cols-3 gap-4">
+        <div className={cn("gap-4", isManager ? "grid lg:grid-cols-3" : "")}>
           {/* Daftar tugas */}
           <SectionCard
-            className="lg:col-span-2"
+            className={cn("", isManager ? "lg:col-span-2" : "")}
             title={`Tugas — ${selectedDecor.name}`}
             action={
               <span className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
@@ -141,7 +144,7 @@ export default function TodoPage() {
             </div>
 
             {decorTasks.length === 0 ? (
-              <EmptyState icon={<ListChecks size={20} />} title="Belum ada tugas" sub="Tambahkan dari template atau buat tugas baru." />
+              <EmptyState icon={<ListChecks size={20} />} title="Belum ada tugas" sub={isManager ? 'Tambahkan dari template atau buat tugas baru.' : 'Tidak ada tugas yang ditugaskan untuk Anda.'} />
             ) : (
               <ul className="divide-y divide-slate-50">
                 {filteredTasks.map((t: Task) => {
@@ -155,32 +158,40 @@ export default function TodoPage() {
                       <div className="flex-1 min-w-0">
                         <p className={cn("text-sm font-medium", isDone ? "text-slate-400 line-through" : "text-navy")}>{t.title}</p>
                         <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                          <Select value={t.status} onValueChange={(v) => updateTask(t.id, { status: v as TaskStatus })}>
-                            <SelectTrigger className="h-7 w-[150px] text-[10px]">
-                              <SelectValue>{TASK_STATUS_LABEL[t.status]}</SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {STATUSES.map((s) => <SelectItem key={s} value={s}>{TASK_STATUS_LABEL[s]}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                          <Select value={t.assigneeId || 'none'} onValueChange={(v) => updateTask(t.id, { assigneeId: v === 'none' ? undefined : v })}>
-                            <SelectTrigger className="h-7 w-[130px] text-[10px]">
-                              <SelectValue>
-                                {assignee ? (
-                                  <span className="flex items-center gap-1.5"><span className="h-4 w-4 rounded-full bg-navy text-white text-[8px] font-bold flex items-center justify-center">{userFirst(state, assignee.id)}</span>{assignee.name.split(' ')[0]}</span>
-                                ) : 'Belum ditugaskan'}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">Belum ditugaskan</SelectItem>
-                              {assigneeOptions.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
+                          {isManager ? (
+                            <>
+                              <Select value={t.status} onValueChange={(v) => updateTask(t.id, { status: v as TaskStatus })}>
+                                <SelectTrigger className="h-7 w-[150px] text-[10px]">
+                                  <SelectValue>{TASK_STATUS_LABEL[t.status]}</SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {STATUSES.map((s) => <SelectItem key={s} value={s}>{TASK_STATUS_LABEL[s]}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                              <Select value={t.assigneeId || 'none'} onValueChange={(v) => updateTask(t.id, { assigneeId: v === 'none' ? undefined : v })}>
+                                <SelectTrigger className="h-7 w-[130px] text-[10px]">
+                                  <SelectValue>
+                                    {assignee ? (
+                                      <span className="flex items-center gap-1.5"><span className="h-4 w-4 rounded-full bg-navy text-white text-[8px] font-bold flex items-center justify-center">{userFirst(state, assignee.id)}</span>{assignee.name.split(' ')[0]}</span>
+                                    ) : 'Belum ditugaskan'}
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="none">Belum ditugaskan</SelectItem>
+                                  {assigneeOptions.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </>
+                          ) : (
+                            <StatusBadge color={TASK_STATUS_COLOR[t.status]} label={TASK_STATUS_LABEL[t.status]} />
+                          )}
                         </div>
                       </div>
-                      <button onClick={() => { deleteTask(t.id); }} className="text-slate-300 hover:text-red-500 shrink-0" aria-label="hapus">
-                        <Trash2 size={16} />
-                      </button>
+                      {isManager && (
+                        <button onClick={() => { deleteTask(t.id); }} className="text-slate-300 hover:text-red-500 shrink-0" aria-label="hapus">
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </li>
                   );
                 })}
@@ -189,6 +200,7 @@ export default function TodoPage() {
           </SectionCard>
 
           {/* Add task */}
+          {isManager && (
           <div className="space-y-4">
             <SectionCard title="Tambah Tugas Baru">
               <form onSubmit={submitNew} className="space-y-4">
@@ -233,6 +245,7 @@ export default function TodoPage() {
               <p className="text-[10px] text-slate-400 mt-3">Klik template untuk menambahkan tugas ke decor ini.</p>
             </SectionCard>
           </div>
+          )}
         </div>
       )}
     </div>

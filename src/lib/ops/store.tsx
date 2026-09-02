@@ -9,7 +9,7 @@ import type {
 import { SEED_STATE } from './seed';
 import { opsUserId, opsRole, opsLogout } from './auth';
 
-const STORAGE_KEY = 'bludecor_ops_state_v2';
+const STORAGE_KEY = 'bludecor_ops_state_v3';
 
 type UID = () => string;
 const uid: UID = () =>

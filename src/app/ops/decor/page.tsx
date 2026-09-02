@@ -131,7 +131,7 @@ function DecorForm({
 
 /* ─── Decor Card ───────────────────────────────────────────────────────── */
 function DecorCard({
-  d, taskCount, doneCount, onSelect, onEdit, onDelete,
+  d, taskCount, doneCount, onSelect, onEdit, onDelete, showRevenue = true,
 }: {
   d: DecorProject;
   taskCount: number;
@@ -139,6 +139,7 @@ function DecorCard({
   onSelect: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  showRevenue?: boolean;
 }) {
   const pct = taskCount ? Math.round((doneCount / taskCount) * 100) : 0;
 
@@ -175,7 +176,7 @@ function DecorCard({
         </div>
       )}
 
-      {d.revenue ? (
+      {showRevenue && d.revenue ? (
         <p className="text-[11px] text-slate-500 font-semibold mt-2">Rp {d.revenue.toLocaleString('id-ID')}</p>
       ) : null}
 
@@ -202,6 +203,13 @@ function DecorCard({
 export default function DecorPage() {
   const { currentUser, decors, addDecor, updateDecor, deleteDecor, selectDecor, tasks } = useOps();
   const isManager = currentUser.role === 'owner' || currentUser.role === 'admin';
+
+  // Freelancer hanya lihat decor yang punya tugas untuk mereka
+  const visibleDecors = useMemo(() => {
+    if (isManager) return decors;
+    const myDecorIds = new Set(tasks.filter((t) => t.assigneeId === currentUser.id).map((t) => t.decorId));
+    return decors.filter((d) => myDecorIds.has(d.id));
+  }, [decors, tasks, currentUser.id, isManager]);
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -223,18 +231,18 @@ export default function DecorPage() {
     router.push(`/ops/decor?${params.toString()}`, { scroll: false });
   }, [searchParams, router]);
 
-  /* ── Counts per status (always computed from full dataset) ────────────── */
+  /* ── Counts per status ──────────────────────────────────────────────── */
   const counts = useMemo(() => {
-    const map: Record<string, number> = { all: decors.length };
+    const map: Record<string, number> = { all: visibleDecors.length };
     for (const s of DECOR_STATUSES) {
-      map[s.value] = decors.filter((d) => d.status === s.value).length;
+      map[s.value] = visibleDecors.filter((d) => d.status === s.value).length;
     }
     return map;
-  }, [decors]);
+  }, [visibleDecors]);
 
   /* ── Filtered & paginated ────────────────────────────────────────────── */
   const filtered = useMemo(
-    () => decors
+    () => visibleDecors
       .filter((d) => activeTab === 'all' || d.status === activeTab)
       .filter((d) => {
         if (!search.trim()) return true;
@@ -349,6 +357,7 @@ export default function DecorPage() {
               onSelect={() => { selectDecor(d.id); toast({ title: `Decor "${d.name}" dipilih` }); }}
                 onEdit={isManager ? () => openEdit(d) : undefined}
                 onDelete={isManager ? () => handleDelete(d) : undefined}
+                showRevenue={isManager}
             />
           ))}
         </div>
