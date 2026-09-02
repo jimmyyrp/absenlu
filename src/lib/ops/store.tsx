@@ -179,17 +179,19 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
     selectDecor: (id) => patchState((p) => ({ ...p, selectedDecorId: id })),
 
     addDecor: (d) => {
+      const name = (d.name || '').trim().slice(0, 100);
+      if (!name) return {} as DecorProject;
       const decor: DecorProject = {
         id: uid(),
-        name: d.name || '',
-        client: d.client,
+        name,
+        client: (d.client || '').trim().slice(0, 100),
         eventType: d.eventType || 'Lainnya',
         category: d.category || d.eventType || 'Lainnya',
         date: d.date || new Date().toISOString().slice(0, 10),
-        location: d.location || '',
+        location: (d.location || '').trim().slice(0, 200),
         status: d.status || 'draft',
-        revenue: d.revenue,
-        note: d.note,
+        revenue: d.revenue && d.revenue > 0 ? d.revenue : undefined,
+        note: (d.note || '').trim().slice(0, 500),
         createdAt: new Date().toISOString(),
       };
       patchState((p) => ({ ...p, decors: [decor, ...p.decors] }));
@@ -221,13 +223,17 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
 
     addUser: (u) => {
       if (!isOwner) return;
-      patchState((p) => ({
-        ...p,
-        users: [
-          ...p.users,
-          { ...u, id: uid(), createdAt: new Date().toISOString() },
-        ],
-      }));
+      const name = (u.name || '').trim().slice(0, 50);
+      const username = (u.username || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30);
+      if (!name || !username) return;
+      patchState((p) => {
+        // Guard: username sudah ada
+        if (p.users.some((ex) => ex.username.toLowerCase() === username)) return p;
+        return {
+          ...p,
+          users: [...p.users, { ...u, id: uid(), name, username, createdAt: new Date().toISOString() }],
+        };
+      });
     },
     updateUser: (id, patch) => {
       if (!isOwner) return;
@@ -247,13 +253,17 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
     },
     setCurrentUser: (id) => patchState((p) => ({ ...p, currentUserId: id })),
 
-    addTask: (t) =>
+    addTask: (t) => {
+      const title = (t.title || '').trim().slice(0, 100);
+      if (!title || !t.decorId) return;
       patchState((p) => {
+        if (!p.decors.some((d) => d.id === t.decorId)) return p;
         const maxOrder = p.tasks
           .filter((x) => x.decorId === t.decorId)
           .reduce((m, x) => Math.max(m, x.order), -1);
-        return { ...p, tasks: [...p.tasks, { ...t, id: uid(), order: maxOrder + 1 }] };
-      }),
+        return { ...p, tasks: [...p.tasks, { ...t, title, id: uid(), order: maxOrder + 1 }] };
+      });
+    },
     updateTask: (id, patch) =>
       patchState((p) => ({
         ...p,
@@ -262,14 +272,20 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
     deleteTask: (id) =>
       patchState((p) => ({ ...p, tasks: p.tasks.filter((t) => t.id !== id) })),
     toggleTask: (id) =>
-      patchState((p) => ({
-        ...p,
-        tasks: p.tasks.map((t) =>
-          t.id === id
-            ? { ...t, status: t.status === 'selesai' ? 'belum' : 'selesai' as TaskStatus }
-            : t,
-        ),
-      })),
+      patchState((p) => {
+        const task = p.tasks.find((t) => t.id === id);
+        if (!task) return p;
+        // Freelancer cuma bisa toggle tugas sendiri
+        if (!isManager && task.assigneeId !== p.currentUserId) return p;
+        return {
+          ...p,
+          tasks: p.tasks.map((t) =>
+            t.id === id
+              ? { ...t, status: t.status === 'selesai' ? 'belum' : 'selesai' as TaskStatus }
+              : t,
+          ),
+        };
+      }),
 
     attendanceForDate: (date) => {
       const map: Record<string, Attendance> = {};
@@ -428,12 +444,21 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
       })),
 
     addActivity: (a) => {
-      const act: Activity = { ...a, id: uid(), at: new Date().toISOString() };
+      const desc = (a.description || '').trim().slice(0, 500);
+      const actType = (a.activityType || 'Lainnya').trim().slice(0, 50);
+      if (!desc) return {} as Activity;
+      const act: Activity = { ...a, description: desc, activityType: actType, id: uid(), at: new Date().toISOString() };
       patchState((p) => ({ ...p, activities: [act, ...p.activities] }));
       return act;
     },
     deleteActivity: (id) =>
-      patchState((p) => ({ ...p, activities: p.activities.filter((a) => a.id !== id) })),
+      patchState((p) => {
+        const act = p.activities.find((a) => a.id === id);
+        if (!act) return p;
+        // Freelancer cuma bisa hapus aktivitas sendiri
+        if (!isManager && act.userId !== p.currentUserId) return p;
+        return { ...p, activities: p.activities.filter((a) => a.id !== id) };
+      }),
     activitiesForProject: (decorId) =>
       state.activities
         .filter((a) => a.decorId === decorId)
@@ -451,11 +476,14 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
 
     addExpense: (e) => {
       if (!isManager) return;
+      const desc = (e.description || '').trim().slice(0, 200);
+      const amount = Math.abs(e.amount || 0);
+      if (!desc || amount <= 0) return;
       patchState((p) => ({
         ...p,
         expenses: [
           ...p.expenses,
-          { ...e, id: uid(), createdAt: new Date().toISOString() },
+          { ...e, description: desc, amount, id: uid(), createdAt: new Date().toISOString() },
         ],
       }));
     },

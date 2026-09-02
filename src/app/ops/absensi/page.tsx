@@ -13,17 +13,11 @@ import {
   type Attendance,
 } from '@/lib/ops/types';
 import { monthlyWorkHours, formatDuration, minutesBetween } from '@/lib/ops/reports';
-import { opsLastLogin, opsDevice } from '@/lib/ops/auth';
+import { opsDevice } from '@/lib/ops/auth';
 import { cn } from '@/lib/utils';
-import { PageHeader, SectionCard, StatusBadge, formatDateTime, Pagination } from '../ops-ui';
+import { PageHeader, SectionCard, StatusBadge, Pagination } from '../ops-ui';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from '@/components/ui/dialog';
 
 const AUDIT_LABEL: Record<string, { label: string; color: string }> = {
   'absensi.masuk': { label: 'Absen Masuk', color: 'bg-emerald-100 text-emerald-700' },
@@ -34,12 +28,6 @@ const AUDIT_LABEL: Record<string, { label: string; color: string }> = {
   'koreksi.setujui': { label: 'Koreksi Disetujui', color: 'bg-emerald-100 text-emerald-700' },
   'koreksi.tolak': { label: 'Koreksi Ditolak', color: 'bg-red-100 text-red-700' },
 };
-
-function parseHM(t?: string) {
-  if (!t) return -1;
-  const [h, m] = t.split(':').map(Number);
-  return h * 60 + m;
-}
 
 const SECTION_TABS = [
   { value: 'status', label: 'Status', icon: LayoutDashboard },
@@ -53,7 +41,7 @@ const VALID_TABS: string[] = ['status', 'rekap', 'koreksi', 'audit'];
 
 export default function AbsensiPage() {
   const {
-    state, currentUser, decors, activeDecors, attendanceForDate, clockIn, clockOut,
+    state, currentUser, decors, attendanceForDate, clockIn, clockOut,
     declareNoWork, deleteSession, requestCorrection, approveCorrection, rejectCorrection,
     corrections, audit,
   } = useOps();
@@ -74,7 +62,6 @@ export default function AbsensiPage() {
   const isToday = date === new Date().toISOString().slice(0, 10);
   const month = date.slice(0, 7);
 
-  // dialogs
   const [showNoWork, setShowNoWork] = useState(false);
   const [auditPage, setAuditPage] = useState(1);
   const AUDIT_PAGE_SIZE = 10;
@@ -83,7 +70,6 @@ export default function AbsensiPage() {
   const freelancers = useMemo(() => state.users.filter((u) => u.active && u.role === 'freelancer'), [state.users]);
   const my = records[currentUser.id];
 
-  // ── Summary ─────────────────────────────────────────────────────────────
   const summary = useMemo(() => {
     let hadir = 0, selesai = 0, tidakBekerja = 0, mengisi = 0;
     for (const u of freelancers) {
@@ -94,14 +80,9 @@ export default function AbsensiPage() {
       else if (r.status === 'selesai') selesai++;
       else if (r.status === 'tidak-bekerja') tidakBekerja++;
     }
-    return {
-      hadir, selesai, tidakBekerja,
-      tidakMengisi: freelancers.length - mengisi,
-      total: freelancers.length,
-    };
+    return { hadir, selesai, tidakBekerja, tidakMengisi: freelancers.length - mengisi, total: freelancers.length };
   }, [records, freelancers]);
 
-  // ── Perlu ditinjau ──────────────────────────────────────────────────────
   const flags = useMemo(() => {
     const out: { userId: string; text: string; sub: string }[] = [];
     const monthCorr = corrections.filter((c) => c.date.slice(0, 7) === month);
@@ -109,83 +90,22 @@ export default function AbsensiPage() {
       const r = records[u.id];
       const corrCount = monthCorr.filter((c) => c.userId === u.id).length;
       if (corrCount >= 3) out.push({ userId: u.id, text: `${u.name.split(' ')[0]} melakukan ${corrCount} koreksi bulan ini.`, sub: 'Koreksi berulang bisa menandakan pola tidak akurat.' });
-      if (r && r.checkIn) {
-        const hm = parseHM(r.checkIn);
-        if (hm >= 0 && (hm < 5 * 60 || hm > 21 * 60)) out.push({ userId: u.id, text: `${u.name.split(' ')[0]} absen masuk ${r.checkIn}.`, sub: 'Jam masuk di luar waktu normal (belum diverifikasi).' });
+      if (r?.checkIn) {
+        const hm = r.checkIn.split(':').map(Number);
+        const mins = hm[0] * 60 + hm[1];
+        if (mins < 5 * 60 || mins > 21 * 60) out.push({ userId: u.id, text: `${u.name.split(' ')[0]} absen masuk ${r.checkIn}.`, sub: 'Jam masuk di luar waktu normal.' });
       }
-      if (r && r.status === 'selesai' && r.checkIn && r.checkOut) {
+      if (r?.status === 'selesai' && r.checkIn && r.checkOut) {
         const dur = minutesBetween(r.checkIn, r.checkOut);
-        if (dur > 0 && dur < 30) out.push({ userId: u.id, text: `${u.name.split(' ')[0]} mencatat durasi kerja ${dur} menit.`, sub: 'Terlalu pendek — tinjau kebenarannya.' });
+        if (dur > 0 && dur < 30) out.push({ userId: u.id, text: `${u.name.split(' ')[0]} mencatat durasi ${dur} menit.`, sub: 'Terlalu pendek — tinjau kebenarannya.' });
       }
     }
     return out;
   }, [freelancers, records, corrections, month]);
 
-  // ── Rekap bulanan ────────────────────────────────────────────────────────
   const workHours = useMemo(() => monthlyWorkHours(state.attendance, month), [state.attendance, month]);
   const hourMap = new Map(workHours.map((h) => [h.userId, h.minutes]));
 
-  const detectLocation = () => {
-    if (!navigator.geolocation) {
-      setLocStatus('fail');
-      setLocLabel('Geolokasi tidak didukung perangkat.');
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocStatus('ok');
-        setLocLabel(`Lokasi terdeteksi · ±${Math.round(pos.coords.accuracy)} m dari titik GPS`);
-      },
-      () => {
-        setLocStatus('fail');
-        setLocLabel('Lokasi tidak tersedia — absen tetap bisa dilanjutkan (opsional).');
-      },
-      { timeout: 8000 },
-    );
-  };
-
-  const submitCheckin = () => {
-    if (!agree) return;
-    const rec = clockIn(currentUser.id, date, decorId === 'none' ? undefined : decorId, note.trim() || undefined, opsDevice());
-    if (rec) {
-      toast({ title: 'Absen masuk tercatat', description: `${rec.checkIn} WIB · data masuk audit log` });
-    } else {
-      toast({ title: 'Kamu sudah punya absensi hari ini', description: 'Satu sesi per hari — hubungi owner jika salah.' });
-    }
-    setShowCheckin(false);
-    setNote('');
-    setAgree(false);
-    setDecorId('');
-  };
-
-  const submitNoWork = () => {
-    if (!agree) return;
-    declareNoWork(currentUser.id, date);
-    toast({ title: 'Dicatat', description: 'Kamu menyatakan tidak bekerja hari ini.' });
-    setShowNoWork(false);
-    setAgree(false);
-  };
-
-  const submitCorrection = () => {
-    if (!corrIn && !corrOut) {
-      setCorrReason('Isi minimal satu jam (masuk atau pulang).');
-      return;
-    }
-    requestCorrection(currentUser.id, date, {
-      requestedCheckIn: corrIn || undefined,
-      requestedCheckOut: corrOut || undefined,
-      reason: corrReason || 'Tidak disebutkan',
-      detail: corrDetail.trim() || undefined,
-    });
-    toast({ title: 'Koreksi diajukan', description: 'Menunggu persetujuan owner.' });
-    setShowCorrection(false);
-    setCorrIn(''); setCorrOut(''); setCorrReason(''); setCorrDetail('');
-  };
-
-  const myDuration = my ? minutesBetween(my.checkIn, my.checkOut) : 0;
-  const myDelivered = my?.note;
-
-  const dateLabel = new Date(date + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const isOwner = currentUser.role === 'owner' || currentUser.role === 'admin';
   const hourRows = isOwner ? freelancers : [currentUser];
   const decorName = (id?: string) => decors.find((d) => d.id === id)?.name || 'Umum';
@@ -196,17 +116,15 @@ export default function AbsensiPage() {
     [corrections],
   );
 
-  const myCorrections = useMemo(
-    () => corrections.filter((c) => c.userId === currentUser.id).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)),
-    [corrections, currentUser.id],
-  );
-
-  const sortedAudit = useMemo(
-    () => [...audit].sort((a, b) => (a.at < b.at ? 1 : -1)),
-    [audit],
-  );
+  const sortedAudit = useMemo(() => [...audit].sort((a, b) => (a.at < b.at ? 1 : -1)), [audit]);
   const auditPageCount = Math.max(1, Math.ceil(sortedAudit.length / AUDIT_PAGE_SIZE));
   const recentAudit = sortedAudit.slice((auditPage - 1) * AUDIT_PAGE_SIZE, auditPage * AUDIT_PAGE_SIZE);
+
+  const myDuration = my ? minutesBetween(my.checkIn, my.checkOut) : 0;
+  const dateLabel = new Date(date + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  // Freelancer hanya lihat tab: status & rekap
+  const visibleTabs = isOwner ? SECTION_TABS : SECTION_TABS.filter((t) => t.value === 'status' || t.value === 'rekap');
 
   return (
     <div>
@@ -228,9 +146,9 @@ export default function AbsensiPage() {
         }
       />
 
-      {/* Section tabs */}
+      {/* Tabs — freelancer cuma lihat status & rekap */}
       <div className="flex gap-1.5 mb-4 overflow-x-auto no-scrollbar pb-1">
-        {SECTION_TABS.map((t) => (
+        {visibleTabs.map((t) => (
           <button
             key={t.value}
             onClick={() => setSectionTab(t.value)}
@@ -244,7 +162,7 @@ export default function AbsensiPage() {
         ))}
       </div>
 
-      {/* Summary (owner/admin) */}
+      {/* Summary — owner/admin only */}
       {isOwner && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mb-4">
           <SummaryPill color="bg-emerald-500" label="Sedang Bekerja" value={summary.hadir} />
@@ -255,9 +173,9 @@ export default function AbsensiPage() {
         </div>
       )}
 
+      {/* ═══ TAB: STATUS ═══ */}
       {sectionTab === 'status' && (
       <div className="grid lg:grid-cols-3 gap-4">
-        {/* Kolom kiri: info pribadi */}
         <div className="space-y-4">
           {isOwner ? (
             <SectionCard title="Mode Pengelola">
@@ -265,7 +183,7 @@ export default function AbsensiPage() {
                 <div className="flex items-center gap-2 text-slate-600 font-bold text-sm uppercase tracking-widest">
                   <ShieldCheck size={15} /> Anda Pengelola
                 </div>
-                <p className="text-xs text-slate-400 mt-1">Tidak perlu absensi — lihat rekap tim di bawah. Freelancer yang melakukan absensi sendiri.</p>
+                <p className="text-xs text-slate-400 mt-1">Tidak perlu absensi — lihat rekap tim di bawah.</p>
               </div>
             </SectionCard>
           ) : (<>
@@ -281,10 +199,8 @@ export default function AbsensiPage() {
                 <Button
                   className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-14 text-base font-bold"
                   onClick={() => {
-                    const rec = clockIn(currentUser.id, date, selectedDecor?.id || undefined, undefined, opsDevice());
-                    if (rec) {
-                      toast({ title: 'Hadir tercatat', description: `${rec.checkIn} WIB` });
-                    }
+                    const rec = clockIn(currentUser.id, date, undefined, undefined, opsDevice());
+                    if (rec) toast({ title: 'Hadir tercatat', description: `${rec.checkIn} WIB` });
                   }}
                 >
                   <LogIn size={18} className="mr-2" /> Hadir
@@ -313,20 +229,16 @@ export default function AbsensiPage() {
                   <p><b>Masuk:</b> {my.checkIn} · <b>Keluar:</b> {my.checkOut}</p>
                   {myDuration > 0 && <p className="text-xs text-slate-500 mt-1">Durasi {formatDuration(myDuration).label}</p>}
                 </div>
-                <p className="text-[10px] text-slate-400 mt-2">Data sudah tercatat.</p>
               </div>
             ) : (
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
                 <p className="text-slate-600 font-bold text-sm uppercase tracking-widest">Tidak Bekerja Hari Ini</p>
-                <div className="flex gap-2 mt-4 justify-center">
-                  <Button size="sm" className="bg-navy text-white" onClick={() => { deleteSession(currentUser.id, date); }}>
-                    <RotateCcw size={13} /> Ubah ke Hadir
-                  </Button>
-                </div>
+                <Button size="sm" className="mt-3 bg-navy text-white" onClick={() => deleteSession(currentUser.id, date)}>
+                  <RotateCcw size={13} /> Ubah ke Hadir
+                </Button>
               </div>
             )}
           </SectionCard>
-
           <SectionCard title="Info">
             <ul className="space-y-2 text-[11px] text-slate-500">
               <li className="flex justify-between"><span className="text-slate-400">Perangkat</span><span className="font-semibold text-navy">{opsDevice()}</span></li>
@@ -335,6 +247,8 @@ export default function AbsensiPage() {
           </SectionCard>
           </>)}
         </div>
+
+        {/* Kolom kanan — rekap */}
         <div className="lg:col-span-2 space-y-4">
           {isOwner && <SectionCard title={`Rekap Tim — ${dateLabel}`} action={<span className="text-[10px] font-bold text-slate-400">{summary.total} orang</span>}>
             <div className="divide-y divide-slate-50">
@@ -351,18 +265,14 @@ export default function AbsensiPage() {
                         <p className="text-[10px] text-slate-400 truncate">
                           {r?.status === 'hadir' || r?.status === 'selesai'
                             ? `${r.checkIn} → ${r.checkOut || '…'} · ${decorName(r.decorId)}${dur > 0 ? ` · ${formatDuration(dur).label}` : ''}`
-                            : r?.status === 'tidak-bekerja'
-                              ? 'Menyatakan tidak bekerja'
-                              : 'Tidak mengisi'}
+                            : r?.status === 'tidak-bekerja' ? 'Menyatakan tidak bekerja' : 'Tidak mengisi'}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <StatusBadge color={ATTENDANCE_STATUS_COLOR[status]} label={ATTENDANCE_STATUS_LABEL[status]} />
                       {isOwner && r && (
-                        <button onClick={() => { deleteSession(u.id, date); toast({ title: 'Session dihapus', description: 'Tercatat di audit log.' }); }} className="text-slate-300 hover:text-red-500" aria-label="hapus session">
-                          <X size={14} />
-                        </button>
+                        <button onClick={() => { deleteSession(u.id, date); toast({ title: 'Session dihapus' }); }} className="text-slate-300 hover:text-red-500" aria-label="hapus"><X size={14} /></button>
                       )}
                     </div>
                   </div>
@@ -377,101 +287,64 @@ export default function AbsensiPage() {
                 {flags.map((f, i) => (
                   <li key={i} className="flex items-start gap-3 rounded-xl border border-amber-100 bg-amber-50 p-3">
                     <AlertTriangle size={15} className="text-amber-500 mt-0.5 shrink-0" />
-                    <div>
-                      <p className="text-sm font-semibold text-navy">{f.text}</p>
-                      <p className="text-[11px] text-slate-500">{f.sub}</p>
-                    </div>
-                    <span className="ml-auto shrink-0 text-[9px] font-black uppercase tracking-widest text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full">Menunggu Owner</span>
+                    <div><p className="text-sm font-semibold text-navy">{f.text}</p><p className="text-[11px] text-slate-500">{f.sub}</p></div>
                   </li>
                 ))}
               </ul>
-              <p className="text-[10px] text-slate-400 mt-3">Warning saja — bukan hukuman. Owner yang memutuskan.</p>
             </SectionCard>
           )}
 
           <SectionCard title={isOwner ? "Rekap Jam Kerja Tim" : "Rekap Jam Kerja Saya"}>
-            <p className="text-[10px] text-slate-400 mb-3">Dihitung dari sesi yang benar-benar diisi (masuk &amp; pulang) pada bulan ini.</p>
             <div className="overflow-x-auto no-scrollbar">
               <table className="w-full text-left">
                 <thead>
                   <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
                     <th className="py-2 pr-3">{isOwner ? 'Freelancer' : 'Nama'}</th>
-                    <th className="py-2">Total Jam Kerja Bulan Ini</th>
+                    <th className="py-2">Total Jam Bulan Ini</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {hourRows
-                    .map((u) => ({ u, minutes: hourMap.get(u.id) || 0 }))
-                    .filter((x) => x.minutes > 0)
-                    .sort((a, b) => b.minutes - a.minutes)
-                    .map(({ u, minutes }) => (
-                      <tr key={u.id} className="border-b border-slate-50">
-                        <td className="py-2.5 pr-3 text-sm font-semibold text-navy">{u.name}</td>
-                        <td className="py-2.5 text-sm text-slate-600">{formatDuration(minutes).label}</td>
-                      </tr>
-                    ))}
+                  {hourRows.map((u) => ({ u, minutes: hourMap.get(u.id) || 0 })).filter((x) => x.minutes > 0).sort((a, b) => b.minutes - a.minutes).map(({ u, minutes }) => (
+                    <tr key={u.id} className="border-b border-slate-50">
+                      <td className="py-2.5 pr-3 text-sm font-semibold text-navy">{u.name}</td>
+                      <td className="py-2.5 text-sm text-slate-600">{formatDuration(minutes).label}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
           </SectionCard>
-
-          {!isOwner && myCorrections.length > 0 && (
-            <SectionCard title="Koreksi Saya">
-              <ul className="space-y-2.5">
-                {myCorrections.map((c) => (
-                  <li key={c.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-semibold text-navy">
-                        {new Date(c.date + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
-                        {c.requestedCheckIn && <> · Masuk → {c.requestedCheckIn}</>}
-                        {c.requestedCheckOut && <> · Keluar → {c.requestedCheckOut}</>}
-                      </p>
-                      <CorrectionBadge status={c.status} />
-                    </div>
-                    <p className="text-[11px] text-slate-500 mt-1"><em>“{c.reason}”</em></p>
-                    {c.status === 'rejected' && <p className="text-[10px] text-red-500 mt-1">Ditolak — hubungi owner jika ada yang salah.</p>}
-                  </li>
-                ))}
-              </ul>
-          </SectionCard>
-          )}
         </div>
       </div>
       )}
 
+      {/* ═══ TAB: REKAP ═══ */}
       {sectionTab === 'rekap' && (
-      <SectionCard title={isOwner ? "Rekap Jam Kerja Tim" : "Rekap Jam Kerja Saya"}>
-        <p className="text-[10px] text-slate-400 mb-3">Dihitung dari sesi yang benar-benar diisi (masuk &amp; pulang) pada bulan ini.</p>
-        <div className="overflow-x-auto no-scrollbar">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
-                <th className="py-2 pr-3">{isOwner ? 'Freelancer' : 'Nama'}</th>
-                <th className="py-2">Total Jam Kerja Bulan Ini</th>
-              </tr>
-            </thead>
-            <tbody>
-              {hourRows
-                .map((u) => ({ u, minutes: hourMap.get(u.id) || 0 }))
-                .filter((x) => x.minutes > 0)
-                .sort((a, b) => b.minutes - a.minutes)
-                .map(({ u, minutes }) => (
+        <SectionCard title={isOwner ? "Rekap Jam Kerja Tim" : "Rekap Jam Kerja Saya"}>
+          <div className="overflow-x-auto no-scrollbar">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
+                  <th className="py-2 pr-3">{isOwner ? 'Freelancer' : 'Nama'}</th>
+                  <th className="py-2">Total Jam Bulan Ini</th>
+                </tr>
+              </thead>
+              <tbody>
+                {hourRows.map((u) => ({ u, minutes: hourMap.get(u.id) || 0 })).filter((x) => x.minutes > 0).sort((a, b) => b.minutes - a.minutes).map(({ u, minutes }) => (
                   <tr key={u.id} className="border-b border-slate-50">
                     <td className="py-2.5 pr-3 text-sm font-semibold text-navy">{u.name}</td>
                     <td className="py-2.5 text-sm text-slate-600">{formatDuration(minutes).label}</td>
                   </tr>
                 ))}
-            </tbody>
-          </table>
-        </div>
-      </SectionCard>
+              </tbody>
+            </table>
+          </div>
+        </SectionCard>
       )}
 
-      {sectionTab === 'koreksi' && (
-      <>
-      {/* Koreksi masuk (owner) */}
-      {isOwner && pendingCorrections.length > 0 && (
-        <SectionCard className="mt-4" title={<span className="flex items-center gap-1.5"><BadgeCheck size={13} className="text-gold" /> Koreksi Masuk ({pendingCorrections.length})</span>}>
+      {/* ═══ TAB: KOREKSI (owner only) ═══ */}
+      {sectionTab === 'koreksi' && isOwner && pendingCorrections.length > 0 && (
+        <SectionCard title={<span className="flex items-center gap-1.5"><BadgeCheck size={13} className="text-gold" /> Koreksi Masuk ({pendingCorrections.length})</span>}>
           <ul className="space-y-3">
             {pendingCorrections.map((c) => (
               <li key={c.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3.5">
@@ -482,19 +355,12 @@ export default function AbsensiPage() {
                       {c.requestedCheckIn && <>Masuk → <b>{c.requestedCheckIn}</b></>}
                       {c.requestedCheckIn && c.requestedCheckOut && ' · '}
                       {c.requestedCheckOut && <>Keluar → <b>{c.requestedCheckOut}</b></>}
-                      {!c.requestedCheckIn && !c.requestedCheckOut && 'Penyesuaian lain'}
-                      {c.reason && <> · <em>“{c.reason}”</em></>}
+                      {c.reason && <> · <em>"{c.reason}"</em></>}
                     </p>
-                    {c.detail && <p className="text-[11px] text-slate-400 mt-1">{c.detail}</p>}
-                    <p className="text-[9px] text-slate-400 mt-1">Diajukan {formatDateTime(c.createdAt)}</p>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="text-red-600 border-red-200" onClick={() => { rejectCorrection(c.id, currentUser.name); toast({ title: 'Koreksi ditolak' }); }}>
-                      Tolak
-                    </Button>
-                    <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { approveCorrection(c.id, currentUser.name); toast({ title: 'Koreksi disetujui', description: 'Jam absensi diperbarui.' }); }}>
-                      <BadgeCheck size={14} /> Setujui
-                    </Button>
+                    <Button variant="outline" size="sm" className="text-red-600 border-red-200" onClick={() => { rejectCorrection(c.id, currentUser.name); toast({ title: 'Koreksi ditolak' }); }}>Tolak</Button>
+                    <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { approveCorrection(c.id, currentUser.name); toast({ title: 'Koreksi disetujui' }); }}><BadgeCheck size={14} /> Setujui</Button>
                   </div>
                 </div>
               </li>
@@ -503,11 +369,9 @@ export default function AbsensiPage() {
         </SectionCard>
       )}
 
-      </>
-      )}
-
+      {/* ═══ TAB: AUDIT (owner only) ═══ */}
       {sectionTab === 'audit' && isOwner && (
-        <SectionCard className="mt-4" title={<span className="flex items-center gap-1.5"><ShieldCheck size={13} /> Audit Log</span>}>
+        <SectionCard title={<span className="flex items-center gap-1.5"><ShieldCheck size={13} /> Audit Log</span>}>
           <div className="space-y-2.5">
             {recentAudit.length === 0 && <p className="text-xs text-slate-400 py-4 text-center">Belum ada aktivitas tercatat.</p>}
             {recentAudit.map((a) => {
@@ -516,10 +380,8 @@ export default function AbsensiPage() {
                 <div key={a.id} className="flex items-start gap-3">
                   <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest shrink-0 mt-0.5", meta.color)}>{meta.label}</span>
                   <div className="min-w-0">
-                    <p className="text-sm text-slate-600">
-                      <span className="font-bold text-navy">{userName(a.userId)}</span>{a.detail ? ` · ${a.detail}` : ''}
-                    </p>
-                    <p className="text-[9px] text-slate-400 flex items-center gap-1"><Clock4 size={9} /> {formatDateTime(a.at)}</p>
+                    <p className="text-sm text-slate-600"><span className="font-bold text-navy">{userName(a.userId)}</span>{a.detail ? ` · ${a.detail}` : ''}</p>
+                    <p className="text-[9px] text-slate-400"><Clock4 size={9} className="inline" /> {new Date(a.at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} · {new Date(a.at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
                 </div>
               );
@@ -530,25 +392,22 @@ export default function AbsensiPage() {
       )}
 
       {/* Dialog Tidak Bekerja */}
-      <Dialog open={showNoWork} onOpenChange={setShowNoWork}>
-        <DialogContent className="rounded-2xl max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-lg text-navy">Tidak Bekerja Hari Ini</DialogTitle>
-            <DialogDescription className="text-xs text-slate-400">Tidak akan dibuatkan absensi fiktif. Ini cukup agar owner tidak menanyakannya.</DialogDescription>
-          </DialogHeader>
-          <div className="flex items-start gap-2.5 rounded-xl border border-slate-200 p-3">
-            <Checkbox id="agree-nw" checked={agree} onCheckedChange={(v) => setAgree(Boolean(v))} />
-            <label htmlFor="agree-nw" className="text-[11px] text-slate-500 leading-relaxed">
-              Saya menyatakan <b>tidak bekerja</b> pada hari ini.
-            </label>
+      {showNoWork && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowNoWork(false)}>
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-navy">Tidak Bekerja Hari Ini</h3>
+            <p className="text-xs text-slate-400 mt-1">Konfirmasi bahwa Anda tidak bekerja hari ini.</p>
+            <div className="flex gap-2 mt-4">
+              <Button variant="outline" className="flex-1" onClick={() => setShowNoWork(false)}>Batal</Button>
+              <Button className="flex-1 bg-navy text-white" onClick={() => {
+                declareNoWork(currentUser.id, date);
+                toast({ title: 'Dicatat' });
+                setShowNoWork(false);
+              }}>Konfirmasi</Button>
+            </div>
           </div>
-          <DialogFooter className="gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setShowNoWork(false)}>Batal</Button>
-            <Button onClick={submitNoWork} disabled={!agree} className="bg-navy text-white">Konfirmasi</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
+        </div>
+      )}
     </div>
   );
 }
@@ -562,14 +421,4 @@ function SummaryPill({ color, label, value }: { color: string; label: string; va
       </p>
     </div>
   );
-}
-
-function CorrectionBadge({ status }: { status: 'pending' | 'approved' | 'rejected' }) {
-  const map = {
-    pending: { label: 'Menunggu Persetujuan', color: 'bg-amber-100 text-amber-700' },
-    approved: { label: 'Disetujui', color: 'bg-emerald-100 text-emerald-700' },
-    rejected: { label: 'Ditolak', color: 'bg-red-100 text-red-700' },
-  } as const;
-  const m = map[status];
-  return <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest", m.color)}>{m.label}</span>;
 }
