@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { supabase } from '@/lib/supabase';
+import { supabaseSafe } from '@/lib/supabase';
 
 /**
  * Sitemap v142.0 - FULL SEO CRAWL MAP
@@ -24,44 +24,46 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Fetch dynamic posts for portfolio and layanan detail pages
   let dynamicRoutes: MetadataRoute.Sitemap = [];
-  try {
-    const pageSize = 1000;
-    let from = 0;
-    let allPosts: { id: number; updated_at: string; created_at: string }[] = [];
-    for (;;) {
-      const { data: batch } = await supabase
-        .from('posts')
-        .select('id, updated_at, created_at')
-        .is('deleted_at', null)
-        .order('id')
-        .range(from, from + pageSize - 1);
-      if (batch && batch.length > 0) {
-        allPosts = allPosts.concat(batch);
-        if (batch.length < pageSize) break;
-        from += pageSize;
-      } else {
-        break;
+  if (supabaseSafe) {
+    try {
+      const pageSize = 1000;
+      let from = 0;
+      let allPosts: { id: number; updated_at: string; created_at: string }[] = [];
+      for (;;) {
+        const { data: batch } = await supabaseSafe
+          .from('posts')
+          .select('id, updated_at, created_at')
+          .is('deleted_at', null)
+          .order('id')
+          .range(from, from + pageSize - 1);
+        if (batch && batch.length > 0) {
+          allPosts = allPosts.concat(batch);
+          if (batch.length < pageSize) break;
+          from += pageSize;
+        } else {
+          break;
+        }
       }
-    }
 
-    if (allPosts.length > 0) {
-      dynamicRoutes = allPosts.flatMap((post) => [
-        {
-          url: `${baseUrl}/portfolio/${post.id}`,
-          lastModified: new Date(post.updated_at || post.created_at),
-          changeFrequency: 'weekly' as const,
-          priority: 0.8,
-        },
-        {
-          url: `${baseUrl}/layanan/${post.id}`,
-          lastModified: new Date(post.updated_at || post.created_at),
-          changeFrequency: 'weekly' as const,
-          priority: 0.8,
-        },
-      ]);
+      if (allPosts.length > 0) {
+        dynamicRoutes = allPosts.flatMap((post) => [
+          {
+            url: `${baseUrl}/portfolio/${post.id}`,
+            lastModified: new Date(post.updated_at || post.created_at),
+            changeFrequency: 'weekly' as const,
+            priority: 0.8,
+          },
+          {
+            url: `${baseUrl}/layanan/${post.id}`,
+            lastModified: new Date(post.updated_at || post.created_at),
+            changeFrequency: 'weekly' as const,
+            priority: 0.8,
+          },
+        ]);
+      }
+    } catch {
+      // Silently fail - static routes are still returned
     }
-  } catch (err) {
-    // Silently fail - static routes are still returned
   }
 
   return [...staticRoutes, ...dynamicRoutes];
