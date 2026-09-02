@@ -302,9 +302,6 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
         // Guardrail: hanya bisa absen hari ini
         const today = new Date().toISOString().slice(0, 10);
         if (date !== today) return p;
-        // Guardrail: jam abnormal (sebelum 05:00 atau sesudah 23:00)
-        const [h] = time.split(':').map(Number);
-        if (h < 5 || h >= 23) return p;
         const decorName = p.decors.find((d) => d.id === decorId)?.name || 'Umum';
         const rec: Attendance = {
           id: existing?.id || uid(),

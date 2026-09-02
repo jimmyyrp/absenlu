@@ -251,6 +251,9 @@ export default function TodoPage() {
             </SectionCard>
           </div>
           )}
+        </div>
+      )}
+
       {/* Confirm toggle dialog */}
       <AlertDialog open={!!confirmToggle} onOpenChange={(open) => !open && setConfirmToggle(null)}>
         <AlertDialogContent className="rounded-2xl">

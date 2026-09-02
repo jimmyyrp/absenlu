@@ -10,7 +10,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useOps, userFirst } from '@/lib/ops/store';
 import {
   ATTENDANCE_STATUS_LABEL, ATTENDANCE_STATUS_COLOR,
-  type Attendance,
+  type Attendance, type AttendanceCorrection,
 } from '@/lib/ops/types';
 import { monthlyWorkHours, formatDuration, minutesBetween } from '@/lib/ops/reports';
 import { opsDevice } from '@/lib/ops/auth';
@@ -18,6 +18,8 @@ import { cn } from '@/lib/utils';
 import { PageHeader, SectionCard, StatusBadge, Pagination } from '../ops-ui';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const AUDIT_LABEL: Record<string, { label: string; color: string }> = {
   'absensi.masuk': { label: 'Absen Masuk', color: 'bg-emerald-100 text-emerald-700' },
@@ -124,7 +126,7 @@ export default function AbsensiPage() {
   const dateLabel = new Date(date + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   // Freelancer hanya lihat tab: status & rekap
-  const visibleTabs = isOwner ? SECTION_TABS : SECTION_TABS.filter((t) => t.value === 'status' || t.value === 'rekap');
+  const visibleTabs = isOwner ? SECTION_TABS : SECTION_TABS.filter((t) => t.value === 'status' || t.value === 'rekap' || t.value === 'koreksi');
 
   return (
     <div>
@@ -199,12 +201,6 @@ export default function AbsensiPage() {
                 <Button
                   className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-14 text-base font-bold"
                   onClick={() => {
-                    const now = new Date();
-                    const hour = now.getHours();
-                    if (hour < 5 || hour >= 23) {
-                      toast({ title: 'Absen gagal', description: 'Absensi hanya tersedia pukul 05:00 – 23:00 WIB. Jika terlambat, ajukan koreksi ke pengelola.', variant: 'destructive' });
-                      return;
-                    }
                     const rec = clockIn(currentUser.id, date, undefined, undefined, opsDevice());
                     if (rec) {
                       toast({ title: 'Hadir tercatat', description: `${rec.checkIn} WIB` });
@@ -352,31 +348,61 @@ export default function AbsensiPage() {
         </SectionCard>
       )}
 
-      {/* ═══ TAB: KOREKSI (owner only) ═══ */}
-      {sectionTab === 'koreksi' && isOwner && pendingCorrections.length > 0 && (
-        <SectionCard title={<span className="flex items-center gap-1.5"><BadgeCheck size={13} className="text-gold" /> Koreksi Masuk ({pendingCorrections.length})</span>}>
-          <ul className="space-y-3">
-            {pendingCorrections.map((c) => (
-              <li key={c.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3.5">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-bold text-navy">{userName(c.userId)} · {new Date(c.date + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      {c.requestedCheckIn && <>Masuk → <b>{c.requestedCheckIn}</b></>}
-                      {c.requestedCheckIn && c.requestedCheckOut && ' · '}
-                      {c.requestedCheckOut && <>Keluar → <b>{c.requestedCheckOut}</b></>}
-                      {c.reason && <> · <em>"{c.reason}"</em></>}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="text-red-600 border-red-200" onClick={() => { rejectCorrection(c.id, currentUser.name); toast({ title: 'Koreksi ditolak' }); }}>Tolak</Button>
-                    <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { approveCorrection(c.id, currentUser.name); toast({ title: 'Koreksi disetujui' }); }}><BadgeCheck size={14} /> Setujui</Button>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </SectionCard>
+      {/* ═══ TAB: KOREKSI ═══ */}
+      {sectionTab === 'koreksi' && (
+        <div className="space-y-4">
+          {/* Freelancer: form ajukan koreksi */}
+          {!isOwner && (
+            <KoreksiForm
+              date={date}
+              my={my}
+              userName={userName}
+              onSubmit={(patch) => {
+                requestCorrection(currentUser.id, date, patch);
+                toast({ title: 'Koreksi diajukan', description: 'Menunggu persetujuan pengelola.' });
+              }}
+            />
+          )}
+
+          {/* Owner: daftar koreksi pending */}
+          {isOwner && pendingCorrections.length > 0 && (
+            <SectionCard title={<span className="flex items-center gap-1.5"><BadgeCheck size={13} className="text-gold" /> Koreksi Masuk ({pendingCorrections.length})</span>}>
+              <ul className="space-y-3">
+                {pendingCorrections.map((c) => (
+                  <li key={c.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-bold text-navy">{userName(c.userId)} · {new Date(c.date + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</p>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          {c.requestedCheckIn && <>Masuk → <b>{c.requestedCheckIn}</b></>}
+                          {c.requestedCheckIn && c.requestedCheckOut && ' · '}
+                          {c.requestedCheckOut && <>Keluar → <b>{c.requestedCheckOut}</b></>}
+                          {c.reason && <> · <em>\"{c.reason}\"</em></>}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" className="text-red-600 border-red-200" onClick={() => { rejectCorrection(c.id, currentUser.name); toast({ title: 'Koreksi ditolak' }); }}>Tolak</Button>
+                        <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => { approveCorrection(c.id, currentUser.name); toast({ title: 'Koreksi disetujui' }); }}><BadgeCheck size={14} /> Setujui</Button>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </SectionCard>
+          )}
+
+          {/* Owner: empty state */}
+          {isOwner && pendingCorrections.length === 0 && (
+            <SectionCard title={<span className="flex items-center gap-1.5"><BadgeCheck size={13} className="text-gold" /> Koreksi Masuk</span>}>
+              <p className="text-xs text-slate-400 py-4 text-center">Tidak ada koreksi yang menunggu persetujuan.</p>
+            </SectionCard>
+          )}
+
+          {/* Freelancer: riwayat koreksi saya */}
+          {!isOwner && (
+            <MyCorrections userId={currentUser.id} corrections={corrections} userName={userName} date={date} />
+          )}
+        </div>
       )}
 
       {/* ═══ TAB: AUDIT (owner only) ═══ */}
@@ -419,6 +445,130 @@ export default function AbsensiPage() {
         </div>
       )}
     </div>
+  );
+}
+
+/* ─── Koreksi Form (freelancer) ───────────────────────────────────────── */
+function KoreksiForm({
+  date, my, userName, onSubmit,
+}: {
+  date: string;
+  my?: Attendance;
+  userName: (id: string) => string;
+  onSubmit: (patch: { requestedCheckIn?: string; requestedCheckOut?: string; reason: string; detail?: string }) => void;
+}) {
+  const [checkIn, setCheckIn] = useState(my?.checkIn || '');
+  const [checkOut, setCheckOut] = useState(my?.checkOut || '');
+  const [reason, setReason] = useState('');
+  const [detail, setDetail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  const canSubmit = reason.trim().length >= 3 && (checkIn || checkOut);
+
+  const handleSubmit = () => {
+    if (!canSubmit) return;
+    onSubmit({
+      requestedCheckIn: checkIn || undefined,
+      requestedCheckOut: checkOut || undefined,
+      reason: reason.trim(),
+      detail: detail.trim() || undefined,
+    });
+    setSubmitted(true);
+  };
+
+  if (submitted) {
+    return (
+      <SectionCard title={<span className="flex items-center gap-1.5"><BadgeCheck size={13} className="text-gold" /> Ajukan Koreksi</span>}>
+        <div className="text-center py-6">
+          <BadgeCheck size={28} className="text-emerald-500 mx-auto mb-2" />
+          <p className="text-sm font-bold text-navy">Koreksi sudah diajukan</p>
+          <p className="text-xs text-slate-400 mt-1">Menunggu persetujuan dari pengelola.</p>
+        </div>
+      </SectionCard>
+    );
+  }
+
+  return (
+    <SectionCard title={<span className="flex items-center gap-1.5"><FileEdit size={13} className="text-gold" /> Ajukan Koreksi</span>}>
+      <p className="text-xs text-slate-400 mb-3">Lupa absen masuk/keluar? Ajukan koreksi di sini. Pengelola akan meninjau.</p>
+      <div className="grid sm:grid-cols-2 gap-3">
+        <div>
+          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Jam Masuk yang Benar</Label>
+          <Input type="time" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} className="mt-1" placeholder="HH:mm" />
+        </div>
+        <div>
+          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Jam Keluar yang Benar</Label>
+          <Input type="time" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} className="mt-1" placeholder="HH:mm" />
+        </div>
+      </div>
+      <div className="mt-3">
+        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Alasan * <span className="text-slate-300 normal-case">(minimal 3 karakter)</span></Label>
+        <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="cth. Lupa absen masuk karena jaringan error" className="mt-1" />
+      </div>
+      <div className="mt-3">
+        <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Detail Tambahan <span className="text-slate-300 normal-case">(opsional)</span></Label>
+        <Input value={detail} onChange={(e) => setDetail(e.target.value)} placeholder="Keterangan lebih lanjut" className="mt-1" />
+      </div>
+      <Button
+        className="mt-4 w-full bg-navy hover:bg-gold text-white"
+        disabled={!canSubmit}
+        onClick={handleSubmit}
+      >
+        <FileEdit size={15} className="mr-2" /> Kirim Koreksi
+      </Button>
+    </SectionCard>
+  );
+}
+
+/* ─── My Corrections (freelancer history) ────────────────────────────── */
+function MyCorrections({
+  userId, corrections, userName, date,
+}: {
+  userId: string;
+  corrections: AttendanceCorrection[];
+  userName: (id: string) => string;
+  date: string;
+}) {
+  const myCorrections = useMemo(
+    () => corrections
+      .filter((c) => c.userId === userId)
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)),
+    [corrections, userId],
+  );
+
+  const statusBadge = (s: string) => {
+    if (s === 'pending') return <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-100 text-amber-700">Menunggu</span>;
+    if (s === 'approved') return <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-100 text-emerald-700">Disetujui</span>;
+    return <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-red-100 text-red-700">Ditolak</span>;
+  };
+
+  return (
+    <SectionCard title="Riwayat Koreksi Saya">
+      {myCorrections.length === 0 ? (
+        <p className="text-xs text-slate-400 py-4 text-center">Belum ada riwayat koreksi.</p>
+      ) : (
+        <ul className="space-y-2.5">
+          {myCorrections.map((c) => (
+            <li key={c.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold text-navy">
+                    {new Date(c.date + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    {c.requestedCheckIn && <>Masuk → <b>{c.requestedCheckIn}</b></>}
+                    {c.requestedCheckIn && c.requestedCheckOut && ' · '}
+                    {c.requestedCheckOut && <>Keluar → <b>{c.requestedCheckOut}</b></>}
+                    {c.reason && <> · <em>"{c.reason}"</em></>}
+                  </p>
+                </div>
+                {statusBadge(c.status)}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </SectionCard>
   );
 }
 
