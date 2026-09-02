@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { opsAuthed, opsLogout } from '@/lib/ops/auth';
 import {
   LayoutDashboard, CalendarRange, ListChecks, Clock4, Wallet, Image, RotateCcw, Settings, LogOut, HelpCircle,
-  BarChart3, FileText, ClipboardList,
+  BarChart3, FileText, ClipboardList, MoreHorizontal,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { OpsProvider, useOps } from '@/lib/ops/store';
@@ -21,7 +21,8 @@ import {
 } from '@/components/ui/dialog';
 import { OpsHelpModal } from '@/components/ops-help-modal';
 
-const NAV = [
+/* ─── Nav definitions ─────────────────────────────────────────────────── */
+const PRIMARY_NAV = [
   { label: 'Dasbor', href: '/ops', icon: LayoutDashboard },
   { label: 'Decor', href: '/ops/decor', icon: CalendarRange },
   { label: 'Tugas', href: '/ops/todo', icon: ListChecks },
@@ -29,34 +30,30 @@ const NAV = [
   { label: 'Keuangan', href: '/ops/pengeluaran', icon: Wallet },
 ];
 
-// Bottom nav (mobile style). Isi tab berbeda per role.
-const BOTTOM_NAV_OWNER = [
-  { label: 'Dasbor', href: '/ops', icon: LayoutDashboard },
-  { label: 'Decor', href: '/ops/decor', icon: CalendarRange },
-  { label: 'Tugas', href: '/ops/todo', icon: ListChecks },
-  { label: 'Absensi', href: '/ops/absensi', icon: Clock4 },
-  { label: 'Keuangan', href: '/ops/pengeluaran', icon: Wallet },
-];
-const BOTTOM_NAV_FREELANCER = [
-  { label: 'Dasbor', href: '/ops', icon: LayoutDashboard },
-  { label: 'Decor', href: '/ops/decor', icon: CalendarRange },
-  { label: 'Tugas', href: '/ops/todo', icon: ListChecks },
-  { label: 'Absensi', href: '/ops/absensi', icon: Clock4 },
-  { label: 'Dokumentasi', href: '/ops/dokumentasi', icon: Image },
-];
-
-const MANAGER_NAV = [
-  ...BOTTOM_NAV_OWNER,
+const SECONDARY_NAV = [
   { label: 'Kegiatan', href: '/ops/kegiatan', icon: ClipboardList },
   { label: 'Analisa', href: '/ops/analisa', icon: BarChart3 },
   { label: 'Laporan', href: '/ops/laporan', icon: FileText },
 ];
 
+const FREELANCER_NAV = [
+  ...PRIMARY_NAV,
+  { label: 'Dokumentasi', href: '/ops/dokumentasi', icon: Image },
+];
+
+const MANAGER_NAV = [...PRIMARY_NAV, ...SECONDARY_NAV];
+const OWNER_NAV = [...MANAGER_NAV, { label: 'Pengaturan', href: '/ops/pengaturan', icon: Settings }];
+
+/* ─── Helpers ─────────────────────────────────────────────────────────── */
+function isActivePath(pathname: string, href: string) {
+  return href === '/ops' ? pathname === '/ops' : pathname.startsWith(href);
+}
+
 function DecorSelector() {
   const { activeDecors, selectedDecorId, selectDecor } = useOps();
   return (
     <Select value={selectedDecorId} onValueChange={selectDecor}>
-      <SelectTrigger className="h-9 w-full max-w-[280px] bg-white border-slate-200 text-navy font-bold text-xs">
+      <SelectTrigger className="h-9 w-full max-w-[240px] bg-white border-slate-200 text-navy font-bold text-xs">
         <SelectValue placeholder="Pilih decor" />
       </SelectTrigger>
       <SelectContent>
@@ -104,51 +101,78 @@ function ResetButton() {
   );
 }
 
+/* ─── Mobile Bottom Nav (max 5 items + overflow) ─────────────────────── */
 function BottomNav() {
   const pathname = usePathname();
   const { currentUser } = useOps();
   const isFreelancer = currentUser.role === 'freelancer';
-  const items = isFreelancer ? BOTTOM_NAV_FREELANCER : BOTTOM_NAV_OWNER;
-  const desktopItems = isFreelancer ? BOTTOM_NAV_FREELANCER : MANAGER_NAV;
+  const isManager = currentUser.role === 'owner' || currentUser.role === 'admin';
+  const isOwner = currentUser.role === 'owner';
+
+  // Primary: always 5 items max for mobile
+  const primaryItems = isFreelancer ? FREELANCER_NAV : PRIMARY_NAV;
+  // Overflow: secondary items for managers (Kegiatan, Analisa, Laporan) + Pengaturan for owner
+  const overflowItems = isManager ? [
+    ...SECONDARY_NAV,
+    ...(isOwner ? [{ label: 'Pengaturan', href: '/ops/pengaturan', icon: Settings }] : []),
+  ] : [];
+
+  const hasOverflow = overflowItems.length > 0;
+  const isOverflowActive = hasOverflow && overflowItems.some((item) => isActivePath(pathname, item.href));
+
   return (
     <>
+      {/* ── Mobile bottom bar ── */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-[0_-2px_12px_rgba(2,17,44,0.06)] md:hidden">
         <div className="flex items-stretch justify-around max-w-lg mx-auto">
-          {desktopItems.map((item) => {
-            const isActive = item.href === '/ops'
-              ? pathname === '/ops'
-              : pathname.startsWith(item.href);
+          {primaryItems.map((item) => {
+            const active = isActivePath(pathname, item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
                   "flex flex-col items-center gap-1 px-2 py-2.5 flex-1 min-w-0 transition-colors",
-                  isActive ? "text-navy" : "text-slate-400 hover:text-navy",
+                  active ? "text-navy" : "text-slate-400 hover:text-navy",
                 )}
               >
-                <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-                <span className={cn("text-[9px] font-black uppercase tracking-wider", isActive ? "text-navy" : "")}>{item.label}</span>
+                <item.icon size={20} strokeWidth={active ? 2.5 : 2} />
+                <span className={cn("text-[9px] font-black uppercase tracking-wider", active ? "text-navy" : "")}>{item.label}</span>
               </Link>
             );
           })}
+          {/* Overflow menu for managers */}
+          {hasOverflow && (
+            <Link
+              href={overflowItems[0]?.href || '/ops/kegiatan'}
+              className={cn(
+                "flex flex-col items-center gap-1 px-2 py-2.5 flex-1 min-w-0 transition-colors",
+                isOverflowActive ? "text-navy" : "text-slate-400 hover:text-navy",
+              )}
+            >
+              <MoreHorizontal size={20} strokeWidth={isOverflowActive ? 2.5 : 2} />
+              <span className={cn("text-[9px] font-black uppercase tracking-wider", isOverflowActive ? "text-navy" : "")}>Lainnya</span>
+            </Link>
+          )}
         </div>
       </nav>
 
-      <aside className="hidden md:flex fixed inset-y-0 left-0 z-40 w-64 flex-col border-r border-slate-800 bg-[#081b34] text-white shadow-xl">
-        <div className="px-5 py-6 border-b border-white/10">
+      {/* ── Desktop sidebar ── */}
+      <aside className="hidden md:flex fixed inset-y-0 left-0 z-40 w-60 flex-col border-r border-slate-800 bg-[#081b34] text-white shadow-xl">
+        <div className="px-5 py-5 border-b border-white/10">
           <p className="text-[10px] font-black uppercase tracking-[0.38em] text-gold">BluDecor</p>
-          <p className="mt-2 text-lg font-bold text-white">OPS</p>
-        </div>          <div className="flex-1 p-3 space-y-1.5 overflow-y-auto no-scrollbar">
-          {items.map((item) => {
-            const isActive = item.href === '/ops' ? pathname === '/ops' : pathname.startsWith(item.href);
+          <p className="mt-1.5 text-lg font-bold text-white">OPS</p>
+        </div>
+        <div className="flex-1 p-3 space-y-1 overflow-y-auto no-scrollbar">
+          {(isOwner ? OWNER_NAV : isManager ? MANAGER_NAV : FREELANCER_NAV).map((item) => {
+            const active = isActivePath(pathname, item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
                   "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold transition-colors",
-                  isActive ? "bg-white text-slate-900" : "text-slate-300 hover:bg-white/5 hover:text-white",
+                  active ? "bg-white text-slate-900" : "text-slate-300 hover:bg-white/5 hover:text-white",
                 )}
               >
                 <item.icon size={17} />
@@ -157,7 +181,7 @@ function BottomNav() {
             );
           })}
         </div>
-        <div className="border-t border-white/10 p-3 space-y-2">
+        <div className="border-t border-white/10 p-3">
           <p className="text-xs text-slate-500 truncate">{currentUser.name}</p>
         </div>
       </aside>
@@ -165,17 +189,20 @@ function BottomNav() {
   );
 }
 
+/* ─── Main Shell ──────────────────────────────────────────────────────── */
 function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { currentUser, selectedDecor } = useOps();
   const [helpOpen, setHelpOpen] = useState(false);
-  const ALL_TITLES = [...BOTTOM_NAV_OWNER, ...BOTTOM_NAV_FREELANCER];
-  const title = ALL_TITLES.find((n) => (n.href === '/ops' ? pathname === '/ops' : pathname.startsWith(n.href)))?.label
-    || MANAGER_NAV.find((n) => pathname.startsWith(n.href))?.label
-    || 'Dasbor';
   const isOwner = currentUser.role === 'owner';
   const isManager = currentUser.role === 'owner' || currentUser.role === 'admin';
+
+  // Find title from all nav lists
+  const allNav = [...OWNER_NAV];
+  const title = allNav.find((n) => isActivePath(pathname, n.href))?.label || 'Dasbor';
+
+  // Route guards
   const freelancerRoutes = ['/ops', '/ops/decor', '/ops/todo', '/ops/absensi', '/ops/dokumentasi', '/ops/kegiatan'];
   const managerRoutes = [...freelancerRoutes, '/ops/analisa', '/ops/laporan', '/ops/pengeluaran'];
   const ownerRoutes = [...managerRoutes, '/ops/pengaturan'];
@@ -196,7 +223,8 @@ function Shell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F7FB] font-body pb-20 md:pb-8 md:pl-64">
+    <div className="min-h-screen bg-[#F6F7FB] font-body pb-20 md:pb-6 md:pl-60">
+      {/* ── Header ── */}
       <header className="sticky top-0 z-30 bg-white border-b border-slate-100 shadow-sm">
         <div className="mx-auto max-w-6xl px-4 py-3 flex items-center gap-3">
           <div className="min-w-0 flex-1">
@@ -205,11 +233,12 @@ function Shell({ children }: { children: React.ReactNode }) {
               {currentUser.name} · {selectedDecor ? selectedDecor.name : 'Belum pilih decor'}
             </p>
           </div>
-          <div className="hidden sm:block shrink-0"><DecorSelector /></div>
-          {isOwner && <ResetButton />}
+          {/* Desktop: inline decor selector + actions */}
+          <div className="hidden md:block shrink-0"><DecorSelector /></div>
+          {isOwner && <div className="hidden md:block"><ResetButton /></div>}
           <button
             type="button"
-            className="shrink-0 sm:hidden h-9 w-9 rounded-xl border border-slate-200 text-slate-400 hover:border-gold/30 hover:text-gold flex items-center justify-center transition-all"
+            className="shrink-0 md:hidden h-9 w-9 rounded-xl border border-slate-200 text-slate-400 hover:border-gold/30 hover:text-gold flex items-center justify-center transition-all"
             onClick={() => setHelpOpen(true)}
             aria-label="Bantuan"
           >
@@ -219,7 +248,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             type="button"
             variant="ghost"
             size="sm"
-            className="shrink-0 hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-slate-200 text-slate-400 hover:border-gold/30 hover:text-gold transition-all"
+            className="shrink-0 hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-slate-200 text-slate-400 hover:border-gold/30 hover:text-gold transition-all"
             onClick={() => setHelpOpen(true)}
           >
             <HelpCircle size={14} /> Bantuan
@@ -236,11 +265,13 @@ function Shell({ children }: { children: React.ReactNode }) {
             <span className="hidden sm:inline">Keluar</span>
           </Button>
         </div>
-        <div className="sm:hidden w-full border-t border-slate-100 px-4 py-2.5 bg-slate-50/70">
+        {/* Mobile: decor selector in a slim row */}
+        <div className="md:hidden w-full border-t border-slate-100 px-4 py-2 bg-slate-50/70">
           <DecorSelector />
         </div>
       </header>
 
+      {/* ── Main content ── */}
       <main className="mx-auto max-w-6xl px-4 py-5 flex flex-col gap-5">
         {children}
       </main>
@@ -251,6 +282,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   );
 }
 
+/* ─── Layout Entry ────────────────────────────────────────────────────── */
 export default function OpsLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [checking, setChecking] = useState(true);
