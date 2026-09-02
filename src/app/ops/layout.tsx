@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { opsAuthed, opsLogout } from '@/lib/ops/auth';
 import {
-  LayoutDashboard, CalendarRange, ListChecks, Clock4, Wallet, Image, RotateCcw, Settings, LogOut,
+  LayoutDashboard, CalendarRange, ListChecks, Clock4, Wallet, Image, RotateCcw, Settings, LogOut, HelpCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { OpsProvider, useOps } from '@/lib/ops/store';
@@ -18,6 +18,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { OpsHelpModal } from '@/components/ops-help-modal';
 
 const NAV = [
   { label: 'Dasbor', href: '/ops', icon: LayoutDashboard },
@@ -34,7 +35,6 @@ const BOTTOM_NAV_OWNER = [
   { label: 'Tugas', href: '/ops/todo', icon: ListChecks },
   { label: 'Absensi', href: '/ops/absensi', icon: Clock4 },
   { label: 'Keuangan', href: '/ops/pengeluaran', icon: Wallet },
-  { label: 'Pengaturan', href: '/ops/pengaturan', icon: Settings },
 ];
 const BOTTOM_NAV_FREELANCER = [
   { label: 'Dasbor', href: '/ops', icon: LayoutDashboard },
@@ -130,8 +130,7 @@ function BottomNav() {
         <div className="px-5 py-6 border-b border-white/10">
           <p className="text-[10px] font-black uppercase tracking-[0.38em] text-gold">BluDecor</p>
           <p className="mt-2 text-lg font-bold text-white">OPS</p>
-        </div>
-        <div className="flex-1 p-3 space-y-1.5">
+        </div>          <div className="flex-1 p-3 space-y-1.5 overflow-y-auto no-scrollbar">
           {items.map((item) => {
             const isActive = item.href === '/ops' ? pathname === '/ops' : pathname.startsWith(item.href);
             return (
@@ -149,8 +148,8 @@ function BottomNav() {
             );
           })}
         </div>
-        <div className="border-t border-white/10 p-3 text-xs text-slate-400">
-          {currentUser.name}
+        <div className="border-t border-white/10 p-3 space-y-2">
+          <p className="text-xs text-slate-500 truncate">{currentUser.name}</p>
         </div>
       </aside>
     </>
@@ -161,6 +160,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { currentUser, selectedDecor } = useOps();
+  const [helpOpen, setHelpOpen] = useState(false);
   const ALL_TITLES = [...BOTTOM_NAV_OWNER, ...BOTTOM_NAV_FREELANCER];
   const title = ALL_TITLES.find((n) => (n.href === '/ops' ? pathname === '/ops' : pathname.startsWith(n.href)))?.label || 'Dasbor';
   const isOwner = currentUser.role === 'owner';
@@ -196,6 +196,23 @@ function Shell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="hidden sm:block shrink-0"><DecorSelector /></div>
           {isOwner && <ResetButton />}
+          <button
+            type="button"
+            className="shrink-0 sm:hidden h-9 w-9 rounded-xl border border-slate-200 text-slate-400 hover:border-gold/30 hover:text-gold flex items-center justify-center transition-all"
+            onClick={() => setHelpOpen(true)}
+            aria-label="Bantuan"
+          >
+            <HelpCircle size={16} />
+          </button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="shrink-0 hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-slate-200 text-slate-400 hover:border-gold/30 hover:text-gold transition-all"
+            onClick={() => setHelpOpen(true)}
+          >
+            <HelpCircle size={14} /> Bantuan
+          </Button>
           <Button
             type="button"
             variant="ghost"
@@ -215,6 +232,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       </main>
 
       <BottomNav />
+      <OpsHelpModal open={helpOpen} onOpenChange={setHelpOpen} />
     </div>
   );
 }
