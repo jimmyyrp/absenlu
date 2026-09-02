@@ -355,6 +355,7 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
       patchState((p) => {
         const existing = p.attendance.find((a) => a.userId === userId && a.date === date);
         if (existing && (existing.status === 'hadir' || existing.status === 'selesai')) return p;
+        if (existing?.status === 'tidak-bekerja') return p;
         const rec: Attendance = {
           id: existing?.id || uid(),
           userId,

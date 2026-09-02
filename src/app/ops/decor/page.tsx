@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select';
 import { PageHeader, StatusBadge, EmptyState, Pagination } from '../ops-ui';
 import { useToast } from '@/hooks/use-toast';
+import { useSubmitLock } from '@/hooks/use-submit-lock';
 
 /* ─── Tab definitions ─────────────────────────────────────────────────── */
 const TAB_ICONS: Record<string, React.ReactNode> = {
@@ -58,21 +59,16 @@ function DecorForm({
   const [status, setStatus] = useState<DecorStatus>(initial?.status || 'draft');
   const [revenue, setRevenue] = useState(initial?.revenue ? String(initial.revenue) : '');
   const [note, setNote] = useState(initial?.note || '');
+  const { locked, run } = useSubmitLock();
 
-  const handle = (e: React.FormEvent) => {
+  const handle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    onSubmit({
-      name: name.trim(),
-      client: client.trim() || undefined,
-      category,
-      eventType: category,
-      date: date || undefined,
-      location: location.trim() || undefined,
-      status,
-      revenue: revenue ? Number(revenue.replace(/[^0-9]/g, '')) : undefined,
-      note: note.trim() || undefined,
-    });
+    await run(() => onSubmit({
+      name: name.trim(), client: client.trim() || undefined, category, eventType: category,
+      date: date || undefined, location: location.trim() || undefined, status,
+      revenue: revenue ? Number(revenue.replace(/[^0-9]/g, '')) : undefined, note: note.trim() || undefined,
+    }));
   };
 
   return (
@@ -123,7 +119,7 @@ function DecorForm({
       </div>
       <DialogFooter className="gap-2 pt-2">
         <Button type="button" variant="outline" onClick={onClose}>Batal</Button>
-        <Button type="submit" className="bg-navy hover:bg-gold text-white">{initial ? 'Simpan Perubahan' : 'Buat Decor'}</Button>
+        <Button type="submit" disabled={locked} className="bg-navy hover:bg-gold text-white">{locked ? 'Menyimpan...' : initial ? 'Simpan Perubahan' : 'Buat Decor'}</Button>
       </DialogFooter>
     </form>
   );

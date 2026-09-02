@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PageHeader, SectionCard, EmptyState, formatDateTime } from '../ops-ui';
 import { useToast } from '@/hooks/use-toast';
+import { useSubmitLock } from '@/hooks/use-submit-lock';
 
 export default function DokumentasiPage() {
   const { state, selectedDecor, photosForProject, addPhoto, deletePhoto } = useOps();
@@ -16,6 +17,7 @@ export default function DokumentasiPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState('');
   const [caption, setCaption] = useState('');
+  const { locked, run } = useSubmitLock();
 
   const decorPhotos = useMemo(
     () => (selectedDecor ? photosForProject(selectedDecor.id) : []),
@@ -30,17 +32,14 @@ export default function DokumentasiPage() {
     reader.readAsDataURL(file);
   };
 
-  const save = () => {
+  const save = async () => {
     if (!selectedDecor || !preview) return;
-    addPhoto({
-      decorId: selectedDecor.id,
-      userId: state.currentUserId,
-      dataUrl: preview,
-      caption: caption.trim() || undefined,
+    await run(() => {
+      addPhoto({ decorId: selectedDecor.id, userId: state.currentUserId, dataUrl: preview, caption: caption.trim() || undefined });
+      setPreview('');
+      setCaption('');
+      toast({ title: 'Foto disimpan' });
     });
-    setPreview('');
-    setCaption('');
-    toast({ title: 'Foto disimpan' });
   };
 
   return (
@@ -69,7 +68,7 @@ export default function DokumentasiPage() {
                 <Input value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="cth. Backdrop pelaminan" className="mt-1" />
               </div>
               <div className="flex gap-2">
-                <Button onClick={save} className="bg-navy hover:bg-gold text-white">Simpan</Button>
+                <Button onClick={save} disabled={locked} className="bg-navy hover:bg-gold text-white">{locked ? 'Menyimpan...' : 'Simpan'}</Button>
                 <Button variant="outline" onClick={() => { setPreview(''); setCaption(''); }}>Batal</Button>
               </div>
             </div>

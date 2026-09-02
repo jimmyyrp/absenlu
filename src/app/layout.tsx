@@ -52,16 +52,21 @@ export const metadata: Metadata = {
     icon: '/favicon_io/favicon.ico',
     apple: '/favicon_io/apple-touch-icon.png',
   },
-  manifest: '/favicon_io/site.webmanifest',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    title: 'BluDecor OPS',
+    statusBarStyle: 'black-translucent',
+  },
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
+  maximumScale: 5,
   viewportFit: 'cover',
   themeColor: '#0B2447',
-  userScalable: false,
+  userScalable: true,
 };
 
 const jsonLd = {

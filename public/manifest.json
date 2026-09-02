@@ -3,10 +3,13 @@
   "name": "BluDecor",
   "short_name": "BluDecor",
   "description": "Arsitek Event Premium di Kota Padang",
-  "start_url": "/",
+  "start_url": "/login",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0B2447",
   "theme_color": "#0B2447",
+  "orientation": "portrait-primary",
+  "categories": ["business", "productivity"],
   "icons": [
     {
       "src": "/logo.jpg",

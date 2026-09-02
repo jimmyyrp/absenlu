@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { PageHeader, SectionCard, StatusBadge, EmptyState, ProgressBar } from '../ops-ui';
 import { useToast } from '@/hooks/use-toast';
+import { useSubmitLock } from '@/hooks/use-submit-lock';
 
 const STATUSES: TaskStatus[] = ['belum', 'dikerjakan', 'selesai', 'terhambat'];
 
@@ -52,6 +53,7 @@ export default function TodoPage() {
   const [newAssignee, setNewAssignee] = useState<string>('');
   const [newStatus, setNewStatus] = useState<TaskStatus>('belum');
   const [confirmToggle, setConfirmToggle] = useState<Task | null>(null);
+  const { locked, run } = useSubmitLock();
 
   const decorTasks = useMemo(() => {
     if (!selectedDecor) return [];
@@ -86,17 +88,14 @@ export default function TodoPage() {
     addTask({ decorId: selectedDecor.id, title, status: 'belum' });
   };
 
-  const submitNew = (e: React.FormEvent) => {
+  const submitNew = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDecor || !newTitle.trim()) return;
-    addTask({
-      decorId: selectedDecor.id,
-      title: newTitle.trim(),
-      status: newStatus,
-      assigneeId: newAssignee || undefined,
+    await run(() => {
+      addTask({ decorId: selectedDecor.id, title: newTitle.trim(), status: newStatus, assigneeId: newAssignee || undefined });
+      setNewTitle('');
+      toast({ title: 'Tugas ditambahkan' });
     });
-    setNewTitle('');
-    toast({ title: 'Tugas ditambahkan' });
   };
 
   return (
@@ -231,7 +230,7 @@ export default function TodoPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button type="submit" className="w-full bg-navy hover:bg-gold text-white"><Plus size={15} /> Tambah</Button>
+                <Button type="submit" disabled={locked} className="w-full bg-navy hover:bg-gold text-white"><Plus size={15} /> {locked ? 'Menambahkan...' : 'Tambah'}</Button>
               </form>
             </SectionCard>
 
