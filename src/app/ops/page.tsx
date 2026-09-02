@@ -3,13 +3,12 @@
 import React, { useMemo } from 'react';
 import Link from 'next/link';
 import {
-  CalendarRange, Clock4, ListChecks, ArrowRight, ChevronRight,
-  Wallet, TrendingUp,
+  CalendarRange, Clock4, ListChecks, ChevronRight,
 } from 'lucide-react';
 import { useOps, userFirst } from '@/lib/ops/store';
 import {
   DECOR_STATUS_COLOR, DECOR_STATUS_LABEL, TASK_STATUS_LABEL, TASK_STATUS_COLOR,
-  ATTENDANCE_STATUS_LABEL, ATTENDANCE_STATUS_COLOR, type AttendanceStatus,
+  ATTENDANCE_STATUS_LABEL, ATTENDANCE_STATUS_COLOR,
 } from '@/lib/ops/types';
 import {
   monthlyFinancial, monthlyWorkHours, formatIDR, formatIDRCompact, formatDuration,
@@ -46,7 +45,8 @@ function QuickCard({
 export default function DashboardPage() {
   const { state, currentUser, decors, activeDecors, selectedDecor, tasks, activities, attendance, expenses } = useOps();
   const isFreelancer = currentUser.role === 'freelancer';
-  const isManager = currentUser.role === 'owner' || currentUser.role === 'admin';
+  const isOwner = currentUser.role === 'owner';
+  const isManager = isOwner || currentUser.role === 'admin';
 
   const today = new Date().toISOString().slice(0, 10);
   const month = today.slice(0, 7);
@@ -137,25 +137,26 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* ── Manager: Financial Quick Stats ─────────────────────────────────── */}
-      {isManager && (
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm text-center">
-            <Wallet size={18} className="mx-auto text-gold mb-2" />
-            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Omzet</p>
-            <p className="text-base font-headline font-bold text-navy">{formatIDRCompact(finance.revenue)}</p>
+      {/* ── Owner: Financial Quick Stats ──────────────────────────────────── */}
+      {isOwner && (
+        <SectionCard title="Keuangan Bulan Ini">
+          <div className="flex items-center gap-4">
+            <div className="flex-1 text-center">
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Omzet</p>
+              <p className="text-sm font-headline font-bold text-navy">{formatIDRCompact(finance.revenue)}</p>
+            </div>
+            <div className="h-8 w-px bg-slate-100" />
+            <div className="flex-1 text-center">
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Pengeluaran</p>
+              <p className="text-sm font-headline font-bold text-navy">{formatIDRCompact(finance.expenses)}</p>
+            </div>
+            <div className="h-8 w-px bg-slate-100" />
+            <div className="flex-1 text-center">
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Profit</p>
+              <p className="text-sm font-headline font-bold text-emerald-600">{formatIDRCompact(finance.profit)}</p>
+            </div>
           </div>
-          <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm text-center">
-            <TrendingUp size={18} className="mx-auto text-sky-500 mb-2" />
-            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Pengeluaran</p>
-            <p className="text-base font-headline font-bold text-navy">{formatIDRCompact(finance.expenses)}</p>
-          </div>
-          <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm text-center">
-            <TrendingUp size={18} className="mx-auto text-emerald-500 mb-2" />
-            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Profit</p>
-            <p className="text-base font-headline font-bold text-navy">{formatIDRCompact(finance.profit)}</p>
-          </div>
-        </div>
+        </SectionCard>
       )}
 
       {/* ── Selected Decor ─────────────────────────────────────────────────── */}
