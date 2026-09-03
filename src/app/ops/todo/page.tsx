@@ -11,7 +11,7 @@ import {
   DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useOps, userFirst } from '@/lib/ops/store';
+import { useOps } from '@/lib/ops/store';
 import { TASK_STATUS_LABEL, TASK_STATUS_COLOR, type Task, type TaskStatus } from '@/lib/ops/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -55,8 +55,6 @@ export default function TodoPage() {
 
   const [addOpen, setAddOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
-  const [newAssignee, setNewAssignee] = useState<string>('');
-  const [newStatus, setNewStatus] = useState<TaskStatus>('belum');
   const [confirmToggle, setConfirmToggle] = useState<Task | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Task | null>(null);
   const { locked, run } = useSubmitLock();
@@ -64,7 +62,6 @@ export default function TodoPage() {
   const decorTasks = useMemo(() => {
     if (!selectedDecor) return [];
     let list = tasks.filter((t) => t.decorId === selectedDecor.id);
-    if (!isManager) list = list.filter((t) => t.assigneeId === currentUser.id);
     return list.sort((a, b) => a.order - b.order);
   }, [tasks, selectedDecor, isManager, currentUser.id],);
 
@@ -84,11 +81,6 @@ export default function TodoPage() {
   const done = decorTasks.filter((t) => t.status === 'selesai').length;
   const progress = decorTasks.length ? Math.round((done / decorTasks.length) * 100) : 0;
 
-  const assigneeOptions = useMemo(
-    () => state.users.filter((u) => u.active),
-    [state.users],
-  );
-
   const addFromTemplate = (title: string, close = false) => {
     if (!selectedDecor) return;
     addTask({ decorId: selectedDecor.id, title, status: 'belum' });
@@ -99,10 +91,8 @@ export default function TodoPage() {
     e.preventDefault();
     if (!selectedDecor || !newTitle.trim()) return;
     await run(() => {
-      addTask({ decorId: selectedDecor.id, title: newTitle.trim(), status: newStatus, assigneeId: newAssignee || undefined });
+      addTask({ decorId: selectedDecor.id, title: newTitle.trim(), status: 'belum' });
       setNewTitle('');
-      setNewAssignee('');
-      setNewStatus('belum');
       setAddOpen(false);
       toast({ title: 'Tugas ditambahkan' });
     });
@@ -169,11 +159,10 @@ export default function TodoPage() {
             </div>
 
             {decorTasks.length === 0 ? (
-              <EmptyState icon={<ListChecks size={20} />} title="Belum ada tugas" sub={isManager ? 'Tambahkan dari template atau buat tugas baru.' : 'Tidak ada tugas yang ditugaskan untuk Anda.'} />
+              <EmptyState icon={<ListChecks size={20} />} title="Belum ada tugas" sub={isManager ? 'Tambahkan dari template atau buat tugas baru.' : 'Belum ada tugas untuk decor ini.'} />
             ) : (
               <ul className="divide-y divide-slate-50">
                 {filteredTasks.map((t: Task) => {
-                  const assignee = state.users.find((u) => u.id === t.assigneeId);
                   const isDone = t.status === 'selesai';
                   return (
                     <li key={t.id} className="py-3 flex items-start gap-3">
@@ -191,19 +180,6 @@ export default function TodoPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                   {STATUSES.map((s) => <SelectItem key={s} value={s}>{TASK_STATUS_LABEL[s]}</SelectItem>)}
-                                </SelectContent>
-                              </Select>
-                              <Select value={t.assigneeId || 'none'} onValueChange={(v) => updateTask(t.id, { assigneeId: v === 'none' ? undefined : v })}>
-                                <SelectTrigger className="h-7 text-[11px] min-w-0">
-                                  <SelectValue>
-                                    {assignee ? (
-                                      <span className="flex items-center gap-1.5"><span className="h-4 w-4 rounded-full bg-navy text-white text-[8px] font-bold flex items-center justify-center">{userFirst(state, assignee.id)}</span>{assignee.name.split(' ')[0]}</span>
-                                    ) : 'Belum ditugaskan'}
-                                  </SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="none">Belum ditugaskan</SelectItem>
-                                  {assigneeOptions.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
                                 </SelectContent>
                               </Select>
                             </>
@@ -241,25 +217,6 @@ export default function TodoPage() {
               <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nama Kegiatan</Label>
               <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="cth. Pasang pencahayaan" className="mt-1" required />
             </div>
-            <div>
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status</Label>
-              <Select value={newStatus} onValueChange={(v) => setNewStatus(v as TaskStatus)}>
-                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {STATUSES.map((s) => <SelectItem key={s} value={s}>{TASK_STATUS_LABEL[s]}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Assign ke</Label>
-              <Select value={newAssignee} onValueChange={setNewAssignee}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="Pilih anggota" /></SelectTrigger>
-                <SelectContent>
-                  {assigneeOptions.map((u) => <SelectItem key={u.id} value={u.id}>{u.name} ({u.role})</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Atau pilih template</p>
               <div className="flex flex-wrap gap-2">

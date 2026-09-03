@@ -275,8 +275,6 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
       patchState((p) => {
         const task = p.tasks.find((t) => t.id === id);
         if (!task) return p;
-        // Freelancer cuma bisa toggle tugas sendiri
-        if (!isManager && task.assigneeId !== p.currentUserId) return p;
         return {
           ...p,
           tasks: p.tasks.map((t) =>
@@ -298,9 +296,6 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
         // Guardrail: hanya bisa absen hari ini
         const today = new Date().toISOString().slice(0, 10);
         if (date !== today) return p;
-        // Guardrail: user harus punya tugas di decor ini (dari todo list)
-        const hasTasks = p.tasks.some((t) => t.decorId === decorId && t.assigneeId === userId);
-        if (!hasTasks) return p;
         // Guardrail: sudah ada sesi aktif (hadir) untuk decor ini hari ini
         const existingActive = p.attendance.find((a) => a.userId === userId && a.date === date && a.decorId === decorId && a.status === 'hadir');
         if (existingActive) return p;
@@ -336,9 +331,6 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
       patchState((p) => {
         const idx = p.attendance.findIndex((a) => a.userId === userId && a.date === date && a.decorId === decorId && a.status === 'hadir');
         if (idx < 0) return p;
-        // Guardrail: tidak boleh akhiri jika ada tugas yang belum selesai
-        const pendingTasks = p.tasks.filter((t) => t.decorId === decorId && t.assigneeId === userId && t.status !== 'selesai');
-        if (pendingTasks.length > 0) return p;
         const decorName = p.decors.find((d) => d.id === decorId)?.name || 'Umum';
         const rec: Attendance = { ...p.attendance[idx], status: 'selesai', checkOut: time, updatedAt: at };
         const next = [...p.attendance];

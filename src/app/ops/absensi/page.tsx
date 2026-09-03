@@ -45,7 +45,7 @@ const VALID_TABS: string[] = ['status', 'rekap', 'koreksi', 'audit'];
 
 export default function AbsensiPage() {
   const {
-    state, currentUser, decors, tasks, attendanceForDate, clockIn, clockOut,
+    state, currentUser, decors, attendanceForDate, clockIn, clockOut,
     declareNoWork, deleteSession, requestCorrection, approveCorrection, rejectCorrection,
     corrections, audit,
   } = useOps();
@@ -83,42 +83,26 @@ export default function AbsensiPage() {
   // Freelancers list
   const freelancers = useMemo(() => state.users.filter((u) => u.active && u.role === 'freelancer'), [state.users]);
 
-  // Decors that currentUser has tasks for (sorted by date, then name)
+  // Semua decor aktif tersedia untuk absensi; pekerjaan ditentukan dari kehadiran.
   const myDecorTasks = useMemo(() => {
-    const map = new Map<string, { decorId: string; decorName: string; total: number; done: number }>();
-    for (const t of tasks) {
-      if (t.assigneeId !== currentUser.id) continue;
-      const existing = map.get(t.decorId);
-      const decorName = decors.find((d) => d.id === t.decorId)?.name || '?';
-      if (existing) {
-        existing.total++;
-        if (t.status === 'selesai') existing.done++;
-      } else {
-        map.set(t.decorId, { decorId: t.decorId, decorName, total: 1, done: t.status === 'selesai' ? 1 : 0 });
-      }
-    }
-    return Array.from(map.values()).sort((a, b) => {
-      const dA = decors.find((d) => d.id === a.decorId);
-      const dB = decors.find((d) => d.id === b.decorId);
-      return (dA?.date || '').localeCompare(dB?.date || '');
-    });
-  }, [tasks, currentUser.id, decors]);
+    return decors
+      .filter((decor) => !['selesai', 'dibatalkan'].includes(decor.status))
+      .map((decor) => ({ decorId: decor.id, decorName: decor.name, total: 0, done: 0 }))
+      .sort((a, b) => {
+        const dA = decors.find((d) => d.id === a.decorId);
+        const dB = decors.find((d) => d.id === b.decorId);
+        return (dA?.date || '').localeCompare(dB?.date || '');
+      });
+  }, [decors]);
 
-  // Owner: all freelancers with tasks
+  // Rekap pengelola menampilkan semua freelancer pada setiap decor aktif.
   const allDecorWithTasks = useMemo(() => {
-    const map = new Map<string, { decorId: string; decorName: string; assignees: Set<string> }>();
-    for (const t of tasks) {
-      if (!t.assigneeId) continue;
-      const existing = map.get(t.decorId);
-      const decorName = decors.find((d) => d.id === t.decorId)?.name || '?';
-      if (existing) {
-        existing.assignees.add(t.assigneeId);
-      } else {
-        map.set(t.decorId, { decorId: t.decorId, decorName, assignees: new Set([t.assigneeId]) });
-      }
-    }
-    return Array.from(map.values());
-  }, [tasks, decors]);
+    const assignees = new Set(freelancers.map((user) => user.id));
+    return decors
+      .filter((decor) => !['selesai', 'dibatalkan'].includes(decor.status))
+      .map((decor) => ({ decorId: decor.id, decorName: decor.name, assignees }))
+      .sort((a, b) => a.decorName.localeCompare(b.decorName));
+  }, [decors, freelancers]);
 
   // My records today (filtered from dayRecords)
   const myRecords = useMemo(() => dayRecords.filter((r) => r.userId === currentUser.id), [dayRecords, currentUser.id]);
@@ -283,7 +267,7 @@ export default function AbsensiPage() {
                       <div className="flex items-center justify-between gap-2 mb-2">
                         <div className="min-w-0">
                           <p className="text-sm font-bold text-navy truncate">{dt.decorName}</p>
-                          <p className="text-[10px] text-slate-400">{dt.done}/{dt.total} tugas selesai</p>
+                          <p className="text-[10px] text-slate-400">Absensi kerja per decor</p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {doneRecord ? (
@@ -613,7 +597,7 @@ export default function AbsensiPage() {
                 if (confirmAttendance.mode === 'masuk') {
                   const rec = clockIn(currentUser.id, date, confirmAttendance.decorId, undefined, opsDevice());
                   if (rec) toast({ title: 'Hadir tercatat', description: `${rec.checkIn} WIB · ${confirmAttendance.decorName}` });
-                  else toast({ title: 'Gagal mencatat', description: 'Anda sudah absen atau tidak ada tugas untuk decor ini.', variant: 'destructive' });
+                  else toast({ title: 'Gagal mencatat', description: 'Anda sudah absen untuk decor ini.', variant: 'destructive' });
                 } else {
                   clockOut(currentUser.id, date, confirmAttendance.decorId);
                   toast({ title: 'Selesai tercatat', description: confirmAttendance.decorName });
