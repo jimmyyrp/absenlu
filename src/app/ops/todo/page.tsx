@@ -117,14 +117,14 @@ export default function TodoPage() {
       {!selectedDecor ? (
         <EmptyState icon={<ListChecks size={20} />} title="Belum ada decor yang dipilih" sub="Pilih decor dari menu Current Decor di bagian atas." />
       ) : (
-        <div className="gap-4">
+        <div className="space-y-4">
           {/* Daftar tugas */}
           <SectionCard
             title={`Tugas — ${selectedDecor.name}`}
             action={
-              <span className="flex items-center gap-3">
-                <span className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
-                  <ProgressBar value={progress} className="w-20" />
+              <div className="flex items-center gap-3">
+                <span className="hidden sm:flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                  <ProgressBar value={progress} className="w-16" />
                   {done}/{decorTasks.length}
                 </span>
                 {isManager && (
@@ -132,12 +132,12 @@ export default function TodoPage() {
                     type="button"
                     size="sm"
                     onClick={() => setAddOpen(true)}
-                    className="h-8 gap-1.5 bg-navy hover:bg-gold text-white text-[10px] font-black uppercase tracking-widest"
+                    className="h-8 gap-1.5 bg-navy hover:bg-gold text-white text-[10px] font-black uppercase tracking-widest px-3"
                   >
-                    <Plus size={13} /> Tambah Tugas
+                    <Plus size={13} /> Tambah
                   </Button>
                 )}
-              </span>
+              </div>
             }
           >
             {/* Status tabs */}
@@ -175,17 +175,17 @@ export default function TodoPage() {
                   const assignee = state.users.find((u) => u.id === t.assigneeId);
                   const isDone = t.status === 'selesai';
                   return (
-                    <li key={t.id} className="py-3 flex items-center gap-3">
-                      <button onClick={() => setConfirmToggle(t)} className="shrink-0 text-slate-300 hover:text-emerald-500" aria-label="toggle">
+                    <li key={t.id} className="py-3 flex items-start gap-3">
+                      <button onClick={() => setConfirmToggle(t)} className="mt-0.5 shrink-0 text-slate-300 hover:text-emerald-500" aria-label="toggle">
                         {isDone ? <CheckSquare size={20} className="text-emerald-500" /> : <Square size={20} />}
                       </button>
                       <div className="flex-1 min-w-0">
-                        <p className={cn("text-sm font-medium", isDone ? "text-slate-400 line-through" : "text-navy")}>{t.title}</p>
+                        <p className={cn("text-sm font-semibold leading-snug", isDone ? "text-slate-400 line-through" : "text-navy")}>{t.title}</p>
                         <div className="flex flex-wrap items-center gap-2 mt-1.5">
                           {isManager ? (
                             <>
                               <Select value={t.status} onValueChange={(v) => updateTask(t.id, { status: v as TaskStatus })}>
-                                <SelectTrigger className="h-7 w-[150px] text-[10px]">
+                                <SelectTrigger className="h-7 text-[11px] min-w-0">
                                   <SelectValue>{TASK_STATUS_LABEL[t.status]}</SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
@@ -193,7 +193,7 @@ export default function TodoPage() {
                                 </SelectContent>
                               </Select>
                               <Select value={t.assigneeId || 'none'} onValueChange={(v) => updateTask(t.id, { assigneeId: v === 'none' ? undefined : v })}>
-                                <SelectTrigger className="h-7 w-[130px] text-[10px]">
+                                <SelectTrigger className="h-7 text-[11px] min-w-0">
                                   <SelectValue>
                                     {assignee ? (
                                       <span className="flex items-center gap-1.5"><span className="h-4 w-4 rounded-full bg-navy text-white text-[8px] font-bold flex items-center justify-center">{userFirst(state, assignee.id)}</span>{assignee.name.split(' ')[0]}</span>
@@ -212,7 +212,7 @@ export default function TodoPage() {
                         </div>
                       </div>
                       {isManager && (
-                        <button onClick={() => { deleteTask(t.id); }} className="text-slate-300 hover:text-red-500 shrink-0" aria-label="hapus">
+                        <button onClick={() => { deleteTask(t.id); }} className="mt-0.5 text-slate-300 hover:text-red-500 shrink-0" aria-label="hapus">
                           <Trash2 size={16} />
                         </button>
                       )}

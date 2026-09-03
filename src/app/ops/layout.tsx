@@ -99,7 +99,7 @@ function BottomNav() {
   return (
     <>
       {/* ── Mobile bottom bar ── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-[0_-2px_12px_rgba(2,17,44,0.06)] md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-[0_-2px_12px_rgba(2,17,44,0.08)] pb-safe md:hidden">
         <div className="flex items-stretch justify-around max-w-lg mx-auto">
           {primaryItems.map((item) => {
             const active = isActivePath(pathname, item.href);
@@ -108,12 +108,13 @@ function BottomNav() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-2 py-2.5 flex-1 min-w-0 transition-colors",
+                  "relative flex flex-1 min-w-0 flex-col items-center justify-center gap-1 py-3 px-1 transition-colors",
                   active ? "text-navy" : "text-slate-400 hover:text-navy",
                 )}
               >
-                <item.icon size={20} strokeWidth={active ? 2.5 : 2} />
-                <span className={cn("text-[9px] font-black uppercase tracking-wider", active ? "text-navy" : "")}>{item.label}</span>
+                {active && <span className="absolute top-0 inset-x-6 h-0.5 rounded-full bg-gold" />}
+                <item.icon size={24} strokeWidth={active ? 2.5 : 1.8} />
+                <span className={cn("text-[11px] font-bold leading-none tracking-wide", active ? "text-navy font-black" : "")}>{item.label}</span>
               </Link>
             );
           })}
@@ -122,18 +123,19 @@ function BottomNav() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button type="button" className={cn(
-                  "flex flex-1 min-w-0 flex-col items-center gap-1 px-2 py-2.5 transition-colors",
+                  "relative flex flex-1 min-w-0 flex-col items-center justify-center gap-1 py-3 px-1 transition-colors",
                   isOverflowActive ? "text-navy" : "text-slate-400 hover:text-navy",
                 )} aria-label="Buka menu lainnya">
-                  <MoreHorizontal size={20} strokeWidth={isOverflowActive ? 2.5 : 2} />
-                  <span className="text-[9px] font-black uppercase tracking-wider">Lainnya</span>
+                  {isOverflowActive && <span className="absolute top-0 inset-x-6 h-0.5 rounded-full bg-gold" />}
+                  <MoreHorizontal size={24} strokeWidth={isOverflowActive ? 2.5 : 1.8} />
+                  <span className={cn("text-[11px] font-bold leading-none tracking-wide", isOverflowActive ? "text-navy font-black" : "")}>Lainnya</span>
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" side="top" className="mb-2 min-w-[180px]">
+              <DropdownMenuContent align="end" side="top" className="mb-3 min-w-[190px]">
                 <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-slate-400">Menu OPS</DropdownMenuLabel>
                 {overflowItems.map((item) => (
-                  <DropdownMenuItem key={item.href} asChild className="py-2.5">
-                    <Link href={item.href}><item.icon size={15} />{item.label}</Link>
+                  <DropdownMenuItem key={item.href} asChild className="py-3 text-sm font-semibold">
+                    <Link href={item.href}><item.icon size={17} />{item.label}</Link>
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
@@ -209,9 +211,9 @@ function Shell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#F6F7FB] font-body pb-20 md:pb-6 md:pl-60">
+    <div className="min-h-screen bg-[#F6F7FB] font-body pb-28 md:pb-6 md:pl-60">
       {/* ── Header ── */}
-      <header className="sticky top-0 z-30 bg-white border-b border-slate-100 shadow-sm">
+      <header className="sticky top-0 z-30 bg-white border-b border-slate-100 shadow-sm pt-safe">
         <div className="mx-auto max-w-6xl px-4 py-3 flex items-center gap-3">
           <div className="min-w-0 flex-1">
             <h1 className="text-base font-headline font-bold text-navy uppercase tracking-widest truncate">{title}</h1>
