@@ -6,6 +6,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+  DialogDescription, DialogFooter,
+} from '@/components/ui/dialog';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useOps, userFirst } from '@/lib/ops/store';
 import { TASK_STATUS_LABEL, TASK_STATUS_COLOR, type Task, type TaskStatus } from '@/lib/ops/types';
@@ -49,6 +53,7 @@ export default function TodoPage() {
     router.push(`/ops/todo?${params.toString()}`, { scroll: false });
   }, [searchParams, router]);
 
+  const [addOpen, setAddOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newAssignee, setNewAssignee] = useState<string>('');
   const [newStatus, setNewStatus] = useState<TaskStatus>('belum');
@@ -83,9 +88,10 @@ export default function TodoPage() {
     [state.users],
   );
 
-  const addFromTemplate = (title: string) => {
+  const addFromTemplate = (title: string, close = false) => {
     if (!selectedDecor) return;
     addTask({ decorId: selectedDecor.id, title, status: 'belum' });
+    if (close) setAddOpen(false);
   };
 
   const submitNew = async (e: React.FormEvent) => {
@@ -94,6 +100,9 @@ export default function TodoPage() {
     await run(() => {
       addTask({ decorId: selectedDecor.id, title: newTitle.trim(), status: newStatus, assigneeId: newAssignee || undefined });
       setNewTitle('');
+      setNewAssignee('');
+      setNewStatus('belum');
+      setAddOpen(false);
       toast({ title: 'Tugas ditambahkan' });
     });
   };
@@ -108,15 +117,26 @@ export default function TodoPage() {
       {!selectedDecor ? (
         <EmptyState icon={<ListChecks size={20} />} title="Belum ada decor yang dipilih" sub="Pilih decor dari menu Current Decor di bagian atas." />
       ) : (
-        <div className={cn("gap-4", isManager ? "grid lg:grid-cols-3" : "")}>
+        <div className="gap-4">
           {/* Daftar tugas */}
           <SectionCard
-            className={cn("", isManager ? "lg:col-span-2" : "")}
             title={`Tugas — ${selectedDecor.name}`}
             action={
-              <span className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
-                <ProgressBar value={progress} className="w-24" />
-                {done}/{decorTasks.length}
+              <span className="flex items-center gap-3">
+                <span className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                  <ProgressBar value={progress} className="w-20" />
+                  {done}/{decorTasks.length}
+                </span>
+                {isManager && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setAddOpen(true)}
+                    className="h-8 gap-1.5 bg-navy hover:bg-gold text-white text-[10px] font-black uppercase tracking-widest"
+                  >
+                    <Plus size={13} /> Tambah Tugas
+                  </Button>
+                )}
               </span>
             }
           >
@@ -202,56 +222,73 @@ export default function TodoPage() {
               </ul>
             )}
           </SectionCard>
+        </div>
+      )}
 
-          {/* Add task */}
-          {isManager && (
-          <div className="space-y-4">
-            <SectionCard title="Tambah Tugas Baru">
-              <form onSubmit={submitNew} className="space-y-4">
-                <div>
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nama Kegiatan</Label>
-                  <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="cth. Pasang pencahayaan" className="mt-1" required />
-                </div>
-                <div>
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status</Label>
-                  <Select value={newStatus} onValueChange={(v) => setNewStatus(v as TaskStatus)}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {STATUSES.map((s) => <SelectItem key={s} value={s}>{TASK_STATUS_LABEL[s]}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Assign ke</Label>
-                  <Select value={newAssignee} onValueChange={setNewAssignee}>
-                    <SelectTrigger className="mt-1"><SelectValue placeholder="Pilih anggota" /></SelectTrigger>
-                    <SelectContent>
-                      {assigneeOptions.map((u) => <SelectItem key={u.id} value={u.id}>{u.name} ({u.role})</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button type="submit" disabled={locked} className="w-full bg-navy hover:bg-gold text-white"><Plus size={15} /> {locked ? 'Menambahkan...' : 'Tambah'}</Button>
-              </form>
-            </SectionCard>
+      {/* Modal: Tambah Tugas Baru */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-navy">Tambah Tugas Baru</DialogTitle>
+            <DialogDescription className="text-sm text-slate-500">
+              Tambahkan tugas untuk decor: {selectedDecor?.name}
+            </DialogDescription>
+          </DialogHeader>
 
-            <SectionCard title="Template Kegiatan">
+          <form id="add-task-form" onSubmit={submitNew} className="space-y-4">
+            <div>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nama Kegiatan</Label>
+              <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="cth. Pasang pencahayaan" className="mt-1" required />
+            </div>
+            <div>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Status</Label>
+              <Select value={newStatus} onValueChange={(v) => setNewStatus(v as TaskStatus)}>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {STATUSES.map((s) => <SelectItem key={s} value={s}>{TASK_STATUS_LABEL[s]}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Assign ke</Label>
+              <Select value={newAssignee} onValueChange={setNewAssignee}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Pilih anggota" /></SelectTrigger>
+                <SelectContent>
+                  {assigneeOptions.map((u) => <SelectItem key={u.id} value={u.id}>{u.name} ({u.role})</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Atau pilih template</p>
               <div className="flex flex-wrap gap-2">
                 {state.settings.taskTemplate.map((tpl) => (
                   <button
                     key={tpl}
-                    onClick={() => addFromTemplate(tpl)}
+                    type="button"
+                    onClick={() => addFromTemplate(tpl, true)}
                     className="px-3 py-1.5 rounded-full bg-slate-100 hover:bg-gold/15 text-slate-600 hover:text-navy text-[11px] font-semibold transition-colors"
                   >
                     + {tpl}
                   </button>
                 ))}
               </div>
-              <p className="text-[10px] text-slate-400 mt-3">Klik template untuk menambahkan tugas ke decor ini.</p>
-            </SectionCard>
-          </div>
-          )}
-        </div>
-      )}
+            </div>
+          </form>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setAddOpen(false)}>Batal</Button>
+            <Button
+              type="submit"
+              form="add-task-form"
+              disabled={locked}
+              className="bg-navy hover:bg-gold text-white"
+            >
+              <Plus size={15} /> {locked ? 'Menambahkan...' : 'Tambah'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Confirm toggle dialog */}
       <AlertDialog open={!!confirmToggle} onOpenChange={(open) => !open && setConfirmToggle(null)}>
