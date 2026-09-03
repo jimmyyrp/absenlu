@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { OpsProvider, useOps } from '@/lib/ops/store';
 import { DECOR_STATUS_COLOR } from '@/lib/ops/types';
 import {
-  PRIMARY_NAV, FREELANCER_NAV, MANAGER_NAV, OWNER_NAV, SECONDARY_NAV,
+  PRIMARY_NAV, FREELANCER_PRIMARY_NAV, FREELANCER_NAV, MANAGER_NAV, OWNER_NAV, SECONDARY_NAV,
   isActivePath, isAllowedRoute,
 } from './navigation';
 import {
@@ -86,7 +86,7 @@ function BottomNav() {
   const isOwner = currentUser.role === 'owner';
 
   // Primary: always 5 items max for mobile
-  const primaryItems = isFreelancer ? FREELANCER_NAV : PRIMARY_NAV;
+  const primaryItems = isFreelancer ? FREELANCER_PRIMARY_NAV : PRIMARY_NAV;
   // Overflow: secondary items for managers (Kegiatan, Analisa, Laporan) + Pengaturan for owner
   const overflowItems = isManager ? [
     ...SECONDARY_NAV,

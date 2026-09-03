@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 const AUDIT_LABEL: Record<string, { label: string; color: string }> = {
@@ -66,6 +67,12 @@ export default function AbsensiPage() {
   const month = date.slice(0, 7);
 
   const [showNoWork, setShowNoWork] = useState(false);
+  const [confirmAttendance, setConfirmAttendance] = useState<{
+    decorId: string;
+    decorName: string;
+    mode: 'masuk' | 'pulang';
+  } | null>(null);
+  const [honestyConfirmed, setHonestyConfirmed] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<(typeof dayRecords)[number] | null>(null);
   const [auditPage, setAuditPage] = useState(1);
   const AUDIT_PAGE_SIZE = 10;
@@ -304,14 +311,7 @@ export default function AbsensiPage() {
                       {!hasRecord ? (
                         <Button
                           className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-10 text-sm font-bold"
-                          onClick={() => {
-                            const rec = clockIn(currentUser.id, date, dt.decorId, undefined, opsDevice());
-                            if (rec) {
-                              toast({ title: 'Hadir tercatat', description: `${rec.checkIn} WIB · ${dt.decorName}` });
-                            } else {
-                              toast({ title: 'Gagal mencatat', description: 'Anda sudah absen atau tidak ada tugas untuk decor ini.', variant: 'destructive' });
-                            }
-                          }}
+                          onClick={() => { setHonestyConfirmed(false); setConfirmAttendance({ decorId: dt.decorId, decorName: dt.decorName, mode: 'masuk' }); }}
                         >
                           <LogIn size={15} className="mr-2" /> Absen Masuk — {dt.decorName}
                         </Button>
@@ -324,10 +324,7 @@ export default function AbsensiPage() {
                               : "bg-slate-200 text-slate-400 cursor-not-allowed"
                           )}
                           disabled={!allDone}
-                          onClick={() => {
-                            clockOut(currentUser.id, date, dt.decorId);
-                            toast({ title: 'Selesai tercatat', description: `${dt.decorName}` });
-                          }}
+                          onClick={() => { setHonestyConfirmed(false); setConfirmAttendance({ decorId: dt.decorId, decorName: dt.decorName, mode: 'pulang' }); }}
                           title={!allDone ? `Selesaikan semua tugas dulu (${dt.done}/${dt.total})` : undefined}
                         >
                           <LogOut size={15} className="mr-2" />
@@ -584,6 +581,53 @@ export default function AbsensiPage() {
       )}
 
       {/* Dialog Tidak Bekerja */}
+      <Dialog
+        open={!!confirmAttendance}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfirmAttendance(null);
+            setHonestyConfirmed(false);
+          }
+        }}
+      >
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base text-navy">
+              Konfirmasi absen {confirmAttendance?.mode}
+            </DialogTitle>
+            <DialogDescription className="text-xs text-slate-400">
+              {confirmAttendance?.mode === 'masuk' ? 'Anda akan mencatat waktu mulai bekerja.' : 'Anda akan mencatat waktu selesai bekerja.'}
+            </DialogDescription>
+          </DialogHeader>
+          <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 cursor-pointer">
+            <Checkbox checked={honestyConfirmed} onCheckedChange={(checked) => setHonestyConfirmed(checked === true)} />
+            <span>Saya menyatakan bahwa absen ini benar dan sesuai kondisi kerja saya.</span>
+          </label>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmAttendance(null)}>Batal</Button>
+            <Button
+              disabled={!honestyConfirmed}
+              className="bg-navy text-white"
+              onClick={() => {
+                if (!confirmAttendance) return;
+                if (confirmAttendance.mode === 'masuk') {
+                  const rec = clockIn(currentUser.id, date, confirmAttendance.decorId, undefined, opsDevice());
+                  if (rec) toast({ title: 'Hadir tercatat', description: `${rec.checkIn} WIB · ${confirmAttendance.decorName}` });
+                  else toast({ title: 'Gagal mencatat', description: 'Anda sudah absen atau tidak ada tugas untuk decor ini.', variant: 'destructive' });
+                } else {
+                  clockOut(currentUser.id, date, confirmAttendance.decorId);
+                  toast({ title: 'Selesai tercatat', description: confirmAttendance.decorName });
+                }
+                setConfirmAttendance(null);
+                setHonestyConfirmed(false);
+              }}
+            >
+              Konfirmasi absen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showNoWork} onOpenChange={setShowNoWork}>
         <DialogContent className="max-w-sm">
           <DialogHeader>

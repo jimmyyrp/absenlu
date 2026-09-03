@@ -11,6 +11,8 @@ export const PRIMARY_NAV = [
   { label: 'Keuangan', href: '/ops/pengeluaran', icon: Wallet },
 ] as const;
 
+export const FREELANCER_PRIMARY_NAV = PRIMARY_NAV.filter((item) => item.href !== '/ops/pengeluaran');
+
 export const SECONDARY_NAV = [
   { label: 'Kegiatan', href: '/ops/kegiatan', icon: ClipboardList },
   { label: 'Analisa', href: '/ops/analisa', icon: BarChart3 },
@@ -18,7 +20,7 @@ export const SECONDARY_NAV = [
 ] as const;
 
 export const FREELANCER_NAV = [
-  ...PRIMARY_NAV,
+  ...FREELANCER_PRIMARY_NAV,
   { label: 'Dokumentasi', href: '/ops/dokumentasi', icon: Image },
 ] as const;
 
