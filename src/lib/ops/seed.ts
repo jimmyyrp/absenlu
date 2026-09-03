@@ -26,12 +26,12 @@ function datePlus(days: number) {
 const users: OpsUser[] = [
   { id: 'u1', name: 'Owner BluDecor', username: 'owner', role: 'owner', phone: '081234567890', active: true, createdAt: atOffset(400, 9) },
   { id: 'u2', name: 'Admin Kantor', username: 'admin', role: 'admin', phone: '081233344455', active: true, createdAt: atOffset(380, 10) },
-  { id: 'u3', name: 'Rian', username: 'rian123', role: 'freelancer', phone: '081234567001', active: true, createdAt: atOffset(300, 9) },
-  { id: 'u4', name: 'Fikri', username: 'fikri123', role: 'freelancer', phone: '081234567002', active: true, createdAt: atOffset(280, 9) },
-  { id: 'u5', name: 'Doni', username: 'doni123', role: 'freelancer', phone: '081234567003', active: true, createdAt: atOffset(260, 9) },
+  { id: 'u3', name: 'Rian', username: 'rian123', role: 'crew', phone: '081234567001', active: true, createdAt: atOffset(300, 9) },
+  { id: 'u4', name: 'Fikri', username: 'fikri123', role: 'crew', phone: '081234567002', active: true, createdAt: atOffset(280, 9) },
+  { id: 'u5', name: 'Doni', username: 'doni123', role: 'crew', phone: '081234567003', active: true, createdAt: atOffset(260, 9) },
 ];
 
-const freelancerIds = ['u3', 'u4', 'u5'];
+const crewIds = ['u3', 'u4', 'u5'];
 
 // ── Decors ────────────────────────────────────────────────────────────────
 const decorDefs: { name: string; client: string; category: string; days: number; location: string; status: DecorStatus; revenue: number }[] = [
@@ -72,7 +72,7 @@ decors.forEach((decor, di) => {
       title: taskTemplate[t % taskTemplate.length],
       category: taskTemplate[t % taskTemplate.length],
       status,
-      assigneeId: freelancerIds[(t + di) % freelancerIds.length],
+      assigneeId: crewIds[(t + di) % crewIds.length],
       priority: t === 0 ? 'tinggi' : 'normal',
       deadline: decor.date,
       order: t,
@@ -80,7 +80,7 @@ decors.forEach((decor, di) => {
   }
 });
 
-// ── Attendance (3 freelancer, ~2 minggu terakhir) ────────────────────────
+// ── Attendance (3 crew, ~2 minggu terakhir) ────────────────────────
 const attendance: Attendance[] = [];
 const daysToCover = 14;
 function isWeekday(dayOffset: number) {
@@ -93,8 +93,8 @@ const activeDecorsSeed = decors.filter((d) => d.status !== 'dibatalkan');
 for (let day = 0; day < daysToCover; day++) {
   if (!isWeekday(day)) continue;
   const date = dateStr(day);
-  for (let k = 0; k < freelancerIds.length; k++) {
-    const userId = freelancerIds[k];
+  for (let k = 0; k < crewIds.length; k++) {
+    const userId = crewIds[k];
     const decor = activeDecorsSeed[(day + k) % activeDecorsSeed.length];
     const inH = 7 + ((day + k) % 2);
     const inM = ((k * 13 + day) % 60);
@@ -146,7 +146,7 @@ let activityId = 0;
 for (let i = 0; i < 12; i++) {
   const day = i % daysToCover;
   const decor = decors[day % decors.length];
-  const userId = freelancerIds[i % freelancerIds.length];
+  const userId = crewIds[i % crewIds.length];
   const d = new Date(now);
   d.setDate(d.getDate() - day);
   d.setHours(9 + (i % 8), (i * 11) % 60, 0, 0);

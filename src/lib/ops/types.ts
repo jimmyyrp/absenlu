@@ -1,4 +1,4 @@
-export type UserRole = 'owner' | 'admin' | 'freelancer';
+export type UserRole = 'owner' | 'admin' | 'crew';
 
 export interface OpsUser {
   id: string;
@@ -64,7 +64,7 @@ export const EXPENSE_CATEGORIES = [
   'Operasional', 'Transportasi', 'BBM', 'Parkir', 'Tol', 'Sewa Kendaraan', 'Kurir', 'Logistik',
   'Material Decor', 'Bunga', 'Kain', 'Backdrop', 'Kayu', 'Akrilik', 'Balon', 'Pita', 'Lem',
   'Kabel', 'Lighting', 'Properti', 'Printing',
-  'Tenaga Kerja', 'Freelancer', 'Harian', 'Helper', 'Driver', 'Crew', 'Lembur',
+  'Tenaga Kerja', 'Harian', 'Helper', 'Driver', 'Crew', 'Lembur',
   'Operasional Kantor', 'Listrik', 'Internet', 'Sewa', 'ATK', 'Maintenance', 'Peralatan',
   'Lainnya', 'Konsumsi', 'Dokumentasi', 'Administrasi', 'Marketing', 'Biaya Tak Terduga',
 ] as const;
@@ -72,7 +72,7 @@ export const EXPENSE_CATEGORIES = [
 export const EXPENSE_GROUPS = [
   { label: 'Transportasi & Logistik', colors: 'bg-sky-100 text-sky-700', keys: ['Transportasi', 'BBM', 'Parkir', 'Tol', 'Sewa Kendaraan', 'Kurir', 'Logistik', 'Operasional'] },
   { label: 'Material Decor', colors: 'bg-emerald-100 text-emerald-700', keys: ['Material Decor', 'Bunga', 'Kain', 'Backdrop', 'Kayu', 'Akrilik', 'Balon', 'Pita', 'Lem', 'Kabel', 'Lighting', 'Properti', 'Printing'] },
-  { label: 'Tenaga Kerja', colors: 'bg-amber-100 text-amber-700', keys: ['Tenaga Kerja', 'Freelancer', 'Harian', 'Helper', 'Driver', 'Crew', 'Lembur'] },
+  { label: 'Tenaga Kerja', colors: 'bg-amber-100 text-amber-700', keys: ['Tenaga Kerja', 'Harian', 'Helper', 'Driver', 'Crew', 'Lembur'] },
   { label: 'Operasional Kantor', colors: 'bg-indigo-100 text-indigo-700', keys: ['Operasional Kantor', 'Listrik', 'Internet', 'Sewa', 'ATK', 'Maintenance', 'Peralatan'] },
   { label: 'Lainnya', colors: 'bg-slate-100 text-slate-600', keys: ['Lainnya', 'Konsumsi', 'Dokumentasi', 'Administrasi', 'Marketing', 'Biaya Tak Terduga'] },
 ];

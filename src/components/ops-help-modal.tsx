@@ -19,7 +19,7 @@ interface HelpArticle {
   title: string;
   icon: React.ReactNode;
   color: string;
-  roles: ('owner' | 'admin' | 'freelancer')[];
+  roles: ('owner' | 'admin' | 'crew')[];
   sections: HelpSection[];
 }
 
@@ -56,7 +56,7 @@ const ARTICLES: HelpArticle[] = [
     title: 'Memulai & Login',
     icon: <Zap size={16} />,
     color: 'bg-gradient-to-br from-amber-500 to-orange-600',
-    roles: ['owner', 'admin', 'freelancer'],
+    roles: ['owner', 'admin', 'crew'],
     sections: [
       {
         title: 'Cara Login ke Sistem',
@@ -84,8 +84,8 @@ const ARTICLES: HelpArticle[] = [
           'Scroll ke bawah untuk melihat "Jam Kerja" dan "Aktivitas Terbaru"',
         ],
         roleNotes: [
-          { role: 'Owner/Admin', note: 'Lihat semua data tim, termasuk jam kerja dan aktivitas semua freelancer' },
-          { role: 'Freelancer', note: 'Hanya melihat data diri sendiri dan decor yang ditugaskan' },
+          { role: 'Owner/Admin', note: 'Lihat semua data tim, termasuk jam kerja dan aktivitas semua crew' },
+          { role: 'Crew', note: 'Hanya melihat data diri sendiri dan decor yang ditugaskan' },
         ],
       },
       {
@@ -99,7 +99,7 @@ const ARTICLES: HelpArticle[] = [
         ],
         tips: [
           'Jika tidak ada decor yang muncul, berarti belum ada decor aktif',
-          'Freelancer hanya melihat decor yang punya tugas untuk mereka',
+          'Crew hanya melihat decor yang punya tugas untuk mereka',
           'Pilih decor yang benar agar data tercatat dengan tepat',
         ],
       },
@@ -110,7 +110,7 @@ const ARTICLES: HelpArticle[] = [
     title: 'Decor / Proyek',
     icon: <CalendarRange size={16} />,
     color: 'bg-gradient-to-br from-indigo-500 to-blue-700',
-    roles: ['owner', 'admin', 'freelancer'],
+    roles: ['owner', 'admin', 'crew'],
     sections: [
       {
         title: 'Apa Itu Decor?',
@@ -176,7 +176,7 @@ const ARTICLES: HelpArticle[] = [
     title: 'Daftar Tugas',
     icon: <ListChecks size={16} />,
     color: 'bg-gradient-to-br from-amber-500 to-yellow-600',
-    roles: ['owner', 'admin', 'freelancer'],
+    roles: ['owner', 'admin', 'crew'],
     sections: [
       {
         title: 'Apa Itu Halaman Tugas?',
@@ -218,7 +218,7 @@ const ARTICLES: HelpArticle[] = [
         ],
         roleNotes: [
           { role: 'Owner/Admin', note: 'Bisa menambah, menghapus, mengubah status dan assignee' },
-          { role: 'Freelancer', note: 'Hanya melihat tugas yang ditugaskan, bisa menandai selesai' },
+          { role: 'Crew', note: 'Hanya melihat tugas yang ditugaskan, bisa menandai selesai' },
         ],
       },
     ],
@@ -228,14 +228,14 @@ const ARTICLES: HelpArticle[] = [
     title: 'Absensi',
     icon: <Clock4 size={16} />,
     color: 'bg-gradient-to-br from-emerald-500 to-green-600',
-    roles: ['owner', 'admin', 'freelancer'],
+    roles: ['owner', 'admin', 'crew'],
     sections: [
       {
         title: 'Apa Itu Absensi?',
         content: 'Pencatatan kehadiran harian. Self-report — tidak wajib, tapi setiap data harus jujur & bisa dipertanggungjawabkan.',
       },
       {
-        title: 'Cara Absen Masuk (Freelancer)',
+        title: 'Cara Absen Masuk (Crew)',
         steps: [
           'Buka halaman Absensi',
           'Pastikan tab "Status" aktif',
@@ -258,7 +258,7 @@ const ARTICLES: HelpArticle[] = [
       {
         title: 'Fitur Owner/Admin',
         tips: [
-          'Tab Rekap → Lihat total jam kerja semua freelancer',
+          'Tab Rekap → Lihat total jam kerja semua crew',
           'Tab Koreksi → Approve/tolak koreksi absensi',
           'Tab Audit → Log semua aktivitas absensi',
           'Flags → Sistem mendeteksi anomali (3+ koreksi, jam aneh, durasi pendek)',
@@ -271,7 +271,7 @@ const ARTICLES: HelpArticle[] = [
     title: 'Kegiatan / Aktivitas',
     icon: <ClipboardList size={16} />,
     color: 'bg-gradient-to-br from-purple-500 to-violet-600',
-    roles: ['owner', 'admin', 'freelancer'],
+    roles: ['owner', 'admin', 'crew'],
     sections: [
       {
         title: 'Cara Mencatat Kegiatan',
@@ -301,7 +301,7 @@ const ARTICLES: HelpArticle[] = [
     title: 'Dokumentasi (Foto)',
     icon: <Image size={16} />,
     color: 'bg-gradient-to-br from-pink-500 to-rose-600',
-    roles: ['owner', 'admin', 'freelancer'],
+    roles: ['owner', 'admin', 'crew'],
     sections: [
       {
         title: 'Cara Upload Foto',
@@ -322,7 +322,7 @@ const ARTICLES: HelpArticle[] = [
         ],
         roleNotes: [
           { role: 'Owner/Admin', note: 'Bisa menghapus foto siapa saja' },
-          { role: 'Freelancer', note: 'Hanya bisa menghapus foto sendiri' },
+          { role: 'Crew', note: 'Hanya bisa menghapus foto sendiri' },
         ],
       },
     ],
@@ -355,7 +355,7 @@ const ARTICLES: HelpArticle[] = [
         tips: [
           'Transportasi & Logistik → BBM, Parkir, Tol, Sewa Kendaraan',
           'Material Decor → Bunga, Kain, Backdrop, Kayu, Lighting',
-          'Tenaga Kerja → Freelancer, Harian, Helper, Driver, Crew',
+          'Tenaga Kerja → Harian, Helper, Driver, Crew',
           'Operasional Kantor → Listrik, Internet, Sewa, ATK',
           'Lainnya → Konsumsi, Dokumentasi, Administrasi',
         ],
@@ -384,7 +384,7 @@ const ARTICLES: HelpArticle[] = [
           'Stat Cards → Total Decor, Omzet, Pengeluaran, Profit',
           'Tabel Profit per Decor → Omzet, Pengeluaran, Profit, Margin per project',
           'Chart → Omzet vs Pengeluaran per decor',
-          'Jam Kerja → Total jam kerja semua freelancer',
+          'Jam Kerja → Total jam kerja semua crew',
         ],
         warnings: [
           'Hanya Owner dan Admin yang bisa mengakses',
@@ -412,7 +412,7 @@ const ARTICLES: HelpArticle[] = [
         title: 'Fitur Analisa',
         tips: [
           'Insight Otomatis → Ringkasan perubahan dari bulan ke bulan',
-          'Stat Cards → Decor, Profit, Jam Kerja, Freelancer Aktif',
+          'Stat Cards → Decor, Profit, Jam Kerja, Crew Aktif',
           'Chart 6 Bulan → Omzet vs Pengeluaran, Tren Profit',
           'Tabel Performa → Perbandingan 6 bulan',
         ],
@@ -470,12 +470,12 @@ const ARTICLES: HelpArticle[] = [
 /* ─── FAQ Data ────────────────────────────────────────────────────────────── */
 const FAQ_DATA = [
   { q: 'Data saya hilang setelah ganti browser?', a: 'Data tersimpan di browser (localStorage). Gunakan browser yang sama, atau hubungi admin.' },
-  { q: 'Saya salah absen, bagaimana cara memperbaiki?', a: 'Freelancer ajukan Koreksi ke admin. Admin/Owner bisa langsung edit atau hapus session.' },
+  { q: 'Saya salah absen, bagaimana cara memperbaiki?', a: 'Crew ajukan Koreksi ke admin. Admin/Owner bisa langsung edit atau hapus session.' },
   { q: 'Saya tidak bisa menghapus pengeluaran?', a: 'Pastikan Anda login sebagai Owner atau Admin.' },
   { q: 'Decor tidak muncul di Tugas?', a: 'Pastikan decor sudah dipilih sebagai Decor Aktif di header.' },
   { q: 'Bagaimana cara melihat profit per project?', a: 'Buka halaman Laporan, lihat tabel "Rekap Profit per Decor".' },
   { q: 'Siapa yang bisa melihat audit log?', a: 'Hanya Owner dan Admin.' },
-  { q: 'Apakah freelancer bisa melihat data keuangan?', a: 'Tidak. Freelancer hanya melihat data yang relevan dengan tugas mereka.' },
+  { q: 'Apakah crew bisa melihat data keuangan?', a: 'Tidak. Crew hanya melihat data yang relevan dengan tugas mereka.' },
   { q: 'Bagaimana cara menambah anggota tim?', a: 'Buka Pengaturan → Tim & Akses → + Tambah User (hanya Owner).' },
 ];
 
@@ -483,7 +483,7 @@ const FAQ_DATA = [
 const ROLE_COLORS: Record<string, string> = {
   owner: 'bg-gold/15 text-gold',
   admin: 'bg-sky-100 text-sky-700',
-  freelancer: 'bg-emerald-100 text-emerald-700',
+  crew: 'bg-emerald-100 text-emerald-700',
 };
 
 /* ─── Accordion Component ─────────────────────────────────────────────────── */
@@ -711,7 +711,7 @@ export function OpsHelpModal({ open, onOpenChange }: { open: boolean; onOpenChan
                     <th className="py-2 pr-2">Fitur</th>
                     <th className="py-2 pr-2 text-center">Owner</th>
                     <th className="py-2 pr-2 text-center">Admin</th>
-                    <th className="py-2 text-center">Freelancer</th>
+                    <th className="py-2 text-center">Crew</th>
                   </tr>
                 </thead>
                 <tbody className="text-[10px]">

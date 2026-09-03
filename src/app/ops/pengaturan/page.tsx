@@ -21,7 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { UserRole } from '@/lib/ops/types';
 import type { OpsUser } from '@/lib/ops/types';
 
-const ROLE_LABEL: Record<UserRole, string> = { owner: 'Owner', admin: 'Admin', freelancer: 'Freelancer' };
+const ROLE_LABEL: Record<UserRole, string> = { owner: 'Owner', admin: 'Admin', crew: 'Crew' };
 
 const TAB_LIST = [
   { value: 'tim', label: 'Tim & Akses', icon: Users },
@@ -53,7 +53,7 @@ export default function PengaturanPage() {
   const [editing, setEditing] = useState<OpsUser | undefined>(undefined);
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
-  const [role, setRole] = useState<UserRole>('freelancer');
+  const [role, setRole] = useState<UserRole>('crew');
   const [phone, setPhone] = useState('');
 
   // jenis kegiatan
@@ -61,7 +61,7 @@ export default function PengaturanPage() {
   // template
   const [newTpl, setNewTpl] = useState('');
 
-  const openCreate = () => { setEditing(undefined); setName(''); setUsername(''); setRole('freelancer'); setPhone(''); setOpen(true); };
+  const openCreate = () => { setEditing(undefined); setName(''); setUsername(''); setRole('crew'); setPhone(''); setOpen(true); };
   const openEdit = (u: OpsUser) => { setEditing(u); setName(u.name); setUsername(u.username); setRole(u.role); setPhone(u.phone || ''); setOpen(true); };
 
   const submitUser = (e: React.FormEvent) => {
@@ -146,7 +146,7 @@ export default function PengaturanPage() {
                       <SelectValue>{ROLE_LABEL[u.role]}</SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      {(['owner', 'admin', 'freelancer'] as UserRole[]).map((r) => <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>)}
+                      {(['owner', 'admin', 'crew'] as UserRole[]).map((r) => <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>)}
                     </SelectContent>
                   </Select>
                   <Switch
@@ -270,7 +270,7 @@ export default function PengaturanPage() {
               <Select value={role} onValueChange={(v) => setRole(v as UserRole)}>
                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {(['owner', 'admin', 'freelancer'] as UserRole[]).map((r) => <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>)}
+                  {(['owner', 'admin', 'crew'] as UserRole[]).map((r) => <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { OpsProvider, useOps } from '@/lib/ops/store';
 import { DECOR_STATUS_COLOR } from '@/lib/ops/types';
 import {
-  PRIMARY_NAV, FREELANCER_PRIMARY_NAV, FREELANCER_NAV, MANAGER_NAV, OWNER_NAV, SECONDARY_NAV,
+  PRIMARY_NAV, CREW_PRIMARY_NAV, CREW_NAV, MANAGER_NAV, OWNER_NAV, SECONDARY_NAV,
   isActivePath, isAllowedRoute,
 } from './navigation';
 import {
@@ -81,12 +81,12 @@ function ResetButton() {
 function BottomNav() {
   const pathname = usePathname();
   const { currentUser } = useOps();
-  const isFreelancer = currentUser.role === 'freelancer';
+  const isCrew = currentUser.role === 'crew';
   const isManager = currentUser.role === 'owner' || currentUser.role === 'admin';
   const isOwner = currentUser.role === 'owner';
 
   // Primary: always 5 items max for mobile
-  const primaryItems = isFreelancer ? FREELANCER_PRIMARY_NAV : PRIMARY_NAV;
+  const primaryItems = isCrew ? CREW_PRIMARY_NAV : PRIMARY_NAV;
   // Overflow: secondary items for managers (Kegiatan, Analisa, Laporan) + Pengaturan for owner
   const overflowItems = isManager ? [
     ...SECONDARY_NAV,
@@ -151,7 +151,7 @@ function BottomNav() {
           <p className="mt-1.5 text-lg font-bold text-white">OPS</p>
         </div>
         <div className="flex-1 p-3 space-y-1 overflow-y-auto no-scrollbar">
-          {(isOwner ? OWNER_NAV : isManager ? MANAGER_NAV : FREELANCER_NAV).map((item) => {
+          {(isOwner ? OWNER_NAV : isManager ? MANAGER_NAV : CREW_NAV).map((item) => {
             const active = isActivePath(pathname, item.href);
             return (
               <Link

@@ -4,25 +4,25 @@ export const OPS_LASTLOGIN_KEY = 'bludecor_ops_lastlogin';
 export const OPS_ROLE_KEY = 'bludecor_ops_role';
 export const OPS_USERID_KEY = 'bludecor_ops_userid';
 
-export type OpsRole = 'owner' | 'admin' | 'freelancer';
+export type OpsRole = 'owner' | 'admin' | 'crew';
 
 // Password per role. Change freely.
 export const OPS_ROLE_PASSWORDS: Record<OpsRole, string> = {
   owner: 'owner123',
   admin: 'admin2026',
-  freelancer: 'freelancer2026',
+  crew: 'crew2026',
 };
 
 const OPS_ACCOUNTS: Record<string, { id: string; role: OpsRole }> = {
   owner: { id: 'u1', role: 'owner' },
   admin: { id: 'u2', role: 'admin' },
-  rian123: { id: 'u3', role: 'freelancer' },
-  fikri123: { id: 'u4', role: 'freelancer' },
-  doni123: { id: 'u5', role: 'freelancer' },
+  rian123: { id: 'u3', role: 'crew' },
+  fikri123: { id: 'u4', role: 'crew' },
+  doni123: { id: 'u5', role: 'crew' },
 };
 
 export function roleLabel(role: OpsRole): string {
-  return role === 'owner' ? 'Owner' : role === 'admin' ? 'Admin' : 'Freelancer';
+  return role === 'owner' ? 'Owner' : role === 'admin' ? 'Admin' : 'Crew';
 }
 
 export function roleForPassword(password: string): OpsRole | null {
@@ -64,7 +64,7 @@ export function opsUserId(): string | null {
 export function opsRole(): OpsRole | null {
   if (typeof window === 'undefined') return null;
   const r = localStorage.getItem(OPS_ROLE_KEY);
-  return r === 'owner' || r === 'admin' || r === 'freelancer' ? r : null;
+  return r === 'owner' || r === 'admin' || r === 'crew' ? r : null;
 }
 
 export function opsLastLogin(): string | null {

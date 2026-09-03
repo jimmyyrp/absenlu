@@ -106,9 +106,9 @@ export function OpsLogin() {
               <p className="font-bold text-navy mb-1">Akun tersedia:</p>
               <div className="flex justify-between"><span className="text-slate-400">Owner</span><code className="font-mono text-navy">owner / owner123</code></div>
               <div className="flex justify-between"><span className="text-slate-400">Admin</span><code className="font-mono text-navy">admin / admin2026</code></div>
-              <div className="flex justify-between"><span className="text-slate-400">Kru</span><code className="font-mono text-navy">rian123 / freelancer2026</code></div>
-              <div className="flex justify-between"><span className="text-slate-400">Kru</span><code className="font-mono text-navy">fikri123 / freelancer2026</code></div>
-              <div className="flex justify-between"><span className="text-slate-400">Kru</span><code className="font-mono text-navy">doni123 / freelancer2026</code></div>
+              <div className="flex justify-between"><span className="text-slate-400">Kru</span><code className="font-mono text-navy">rian123 / crew2026</code></div>
+              <div className="flex justify-between"><span className="text-slate-400">Kru</span><code className="font-mono text-navy">fikri123 / crew2026</code></div>
+              <div className="flex justify-between"><span className="text-slate-400">Kru</span><code className="font-mono text-navy">doni123 / crew2026</code></div>
               <p className="text-slate-400 pt-1">Password menentukan role &amp; akses menu.</p>
             </div>
           )}

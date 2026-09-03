@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useRef, useState } from 'react';
-import { Image, Plus, Trash2, X } from 'lucide-react';
+import { Image, Plus, Trash2, Download, CloudDownload } from 'lucide-react';
 import { useOps, userFirst } from '@/lib/ops/store';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,11 @@ import { Label } from '@/components/ui/label';
 import { PageHeader, SectionCard, EmptyState, formatDateTime, ConfirmDialog } from '../ops-ui';
 import { useToast } from '@/hooks/use-toast';
 import { useSubmitLock } from '@/hooks/use-submit-lock';
+import JSZip from 'jszip';
+
+function slugify(name: string) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'foto';
+}
 
 export default function DokumentasiPage() {
   const { state, selectedDecor, photosForProject, addPhoto, deletePhoto } = useOps();
@@ -18,6 +23,7 @@ export default function DokumentasiPage() {
   const [preview, setPreview] = useState('');
   const [caption, setCaption] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<(typeof decorPhotos)[number] | null>(null);
+  const [downloading, setDownloading] = useState(false);
   const { locked, run } = useSubmitLock();
 
   const decorPhotos = useMemo(
@@ -43,6 +49,43 @@ export default function DokumentasiPage() {
     });
   };
 
+  const downloadSingle = (p: (typeof decorPhotos)[number]) => {
+    const a = document.createElement('a');
+    a.href = p.dataUrl;
+    a.download = `${slugify(selectedDecor?.name || 'decor')}-${p.caption ? slugify(p.caption) : p.id}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast({ title: 'Foto diunduh' });
+  };
+
+  const downloadAll = async () => {
+    if (!selectedDecor || decorPhotos.length === 0) return;
+    setDownloading(true);
+    try {
+      const zip = new JSZip();
+      decorPhotos.forEach((p, idx) => {
+        const name = `${slugify(selectedDecor.name)}-${String(idx + 1).padStart(2, '0')}${p.caption ? '-' + slugify(p.caption) : ''}.jpg`;
+        const base64 = (p.dataUrl || '').split(',')[1] || '';
+        if (base64) zip.file(name, base64, { base64: true });
+      });
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${slugify(selectedDecor.name)}-dokumentasi.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({ title: 'Semua foto diunduh', description: `${decorPhotos.length} foto dalam satu file ZIP` });
+    } catch {
+      toast({ title: 'Gagal mengunduh', variant: 'destructive' });
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div>
       <PageHeader
@@ -50,9 +93,16 @@ export default function DokumentasiPage() {
         subtitle={selectedDecor ? `Foto & dokumentasi — ${selectedDecor.name}` : 'Pilih decor untuk melihat dokumentasi'}
         action={
           !selectedDecor ? undefined : (
-            <Button onClick={() => fileRef.current?.click()} className="bg-navy hover:bg-gold text-white">
-              <Plus size={15} /> Tambah Foto
-            </Button>
+            <div className="flex items-center gap-2">
+              {decorPhotos.length > 0 && (
+                <Button variant="outline" onClick={downloadAll} disabled={downloading}>
+                  <CloudDownload size={15} /> {downloading ? 'Mengunduh...' : 'Unduh Semua'}
+                </Button>
+              )}
+              <Button onClick={() => fileRef.current?.click()} className="bg-navy hover:bg-gold text-white">
+                <Plus size={15} /> Tambah Foto
+              </Button>
+            </div>
           )
         }
       />
@@ -92,13 +142,24 @@ export default function DokumentasiPage() {
                 ) : (
                   <div className="h-40 w-full bg-slate-100 flex items-center justify-center text-slate-300"><Image size={24} /></div>
                 )}
-                <button
-                  onClick={() => setConfirmDelete(p)}
-                  className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                  aria-label="hapus foto"
-                >
-                  <Trash2 size={14} />
-                </button>
+                <div className="absolute top-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {p.dataUrl && (
+                    <button
+                      onClick={() => downloadSingle(p)}
+                      className="h-7 w-7 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center"
+                      aria-label="unduh foto"
+                    >
+                      <Download size={14} />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setConfirmDelete(p)}
+                    className="h-7 w-7 rounded-full bg-black/50 hover:bg-red-600 text-white flex items-center justify-center"
+                    aria-label="hapus foto"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
                 <div className="p-2.5">
                   {p.caption && <p className="text-[11px] font-semibold text-navy truncate">{p.caption}</p>}
                   <p className="text-[9px] text-slate-400 mt-0.5 flex items-center gap-1">
@@ -109,6 +170,15 @@ export default function DokumentasiPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Mobile: floating download all */}
+      {selectedDecor && decorPhotos.length > 0 && (
+        <div className="md:hidden mt-4">
+          <Button variant="outline" className="w-full" onClick={downloadAll} disabled={downloading}>
+            <CloudDownload size={15} /> {downloading ? 'Mengunduh...' : 'Unduh Semua Foto'}
+          </Button>
         </div>
       )}
 

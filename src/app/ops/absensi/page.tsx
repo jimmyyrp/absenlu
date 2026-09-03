@@ -80,8 +80,8 @@ export default function AbsensiPage() {
   // Multi-session: array of attendance for this date
   const dayRecords = useMemo(() => attendanceForDate(date), [attendanceForDate, date]);
 
-  // Freelancers list
-  const freelancers = useMemo(() => state.users.filter((u) => u.active && u.role === 'freelancer'), [state.users]);
+  // Crew list
+  const crewList = useMemo(() => state.users.filter((u) => u.active && u.role === 'crew'), [state.users]);
 
   // Semua decor aktif tersedia untuk absensi; pekerjaan ditentukan dari kehadiran.
   const myDecorTasks = useMemo(() => {
@@ -95,14 +95,14 @@ export default function AbsensiPage() {
       });
   }, [decors]);
 
-  // Rekap pengelola menampilkan semua freelancer pada setiap decor aktif.
+  // Rekap pengelola menampilkan semua crew pada setiap decor aktif.
   const allDecorWithTasks = useMemo(() => {
-    const assignees = new Set(freelancers.map((user) => user.id));
+    const assignees = new Set(crewList.map((user) => user.id));
     return decors
       .filter((decor) => !['selesai', 'dibatalkan'].includes(decor.status))
       .map((decor) => ({ decorId: decor.id, decorName: decor.name, assignees }))
       .sort((a, b) => a.decorName.localeCompare(b.decorName));
-  }, [decors, freelancers]);
+  }, [decors, crewList]);
 
   // My records today (filtered from dayRecords)
   const myRecords = useMemo(() => dayRecords.filter((r) => r.userId === currentUser.id), [dayRecords, currentUser.id]);
@@ -110,7 +110,7 @@ export default function AbsensiPage() {
   // Summary for owner
   const summary = useMemo(() => {
     let hadir = 0, selesai = 0, tidakBekerja = 0, tidakMengisi = 0;
-    for (const u of freelancers) {
+    for (const u of crewList) {
       const userRecords = dayRecords.filter((r) => r.userId === u.id);
       if (userRecords.length === 0) {
         tidakMengisi++;
@@ -122,14 +122,14 @@ export default function AbsensiPage() {
         else if (r.status === 'tidak-bekerja') tidakBekerja++;
       }
     }
-    return { hadir, selesai, tidakBekerja, tidakMengisi, total: freelancers.length };
-  }, [dayRecords, freelancers]);
+    return { hadir, selesai, tidakBekerja, tidakMengisi, total: crewList.length };
+  }, [dayRecords, crewList]);
 
   // Flags
   const flags = useMemo(() => {
     const out: { userId: string; text: string; sub: string }[] = [];
     const monthCorr = corrections.filter((c) => c.date.slice(0, 7) === month);
-    for (const u of freelancers) {
+    for (const u of crewList) {
       const corrCount = monthCorr.filter((c) => c.userId === u.id).length;
       if (corrCount >= 3) out.push({ userId: u.id, text: `${u.name.split(' ')[0]} melakukan ${corrCount} koreksi bulan ini.`, sub: 'Koreksi berulang bisa menandakan pola tidak akurat.' });
       const userRecords = dayRecords.filter((r) => r.userId === u.id);
@@ -146,13 +146,13 @@ export default function AbsensiPage() {
       }
     }
     return out;
-  }, [freelancers, dayRecords, corrections, month]);
+  }, [crewList, dayRecords, corrections, month]);
 
   const workHours = useMemo(() => monthlyWorkHours(state.attendance, month), [state.attendance, month]);
   const hourMap = new Map(workHours.map((h) => [h.userId, h.minutes]));
 
   const isOwner = currentUser.role === 'owner' || currentUser.role === 'admin';
-  const hourRows = isOwner ? freelancers : [currentUser];
+  const hourRows = isOwner ? crewList : [currentUser];
   const decorName = (id?: string) => decors.find((d) => d.id === id)?.name || 'Umum';
   const userName = (id: string) => state.users.find((u) => u.id === id)?.name || id;
 
@@ -173,7 +173,7 @@ export default function AbsensiPage() {
 
   const dateLabel = new Date(date + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-  // Freelancer hanya lihat tab: status & rekap
+  // Crew hanya lihat tab: status & rekap
   const visibleTabs = isOwner ? SECTION_TABS : SECTION_TABS.filter((t) => t.value === 'status' || t.value === 'rekap' || t.value === 'koreksi');
   const sectionTab = visibleTabs.some((tab) => tab.value === requestedTab) ? requestedTab : 'status';
 
@@ -238,7 +238,7 @@ export default function AbsensiPage() {
               </div>
             </SectionCard>
           ) : (<>
-          {/* Absensi per Decor — Freelancer */}
+          {/* Absensi per Decor — Crew */}
           <SectionCard title="Absensi Hari Ini" action={
             isToday && myRecords.length > 0 && (
               <span className="text-[10px] font-bold text-slate-400">Total: {formatDuration(myTotalDuration).label}</span>
@@ -411,7 +411,7 @@ export default function AbsensiPage() {
               <table className="w-full text-left">
                 <thead>
                   <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
-                    <th className="py-2 pr-3">{isOwner ? 'Freelancer' : 'Nama'}</th>
+                    <th className="py-2 pr-3">{isOwner ? 'Crew' : 'Nama'}</th>
                     <th className="py-2">Total Jam Bulan Ini</th>
                   </tr>
                 </thead>
@@ -437,7 +437,7 @@ export default function AbsensiPage() {
             <table className="w-full text-left">
               <thead>
                 <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
-                  <th className="py-2 pr-3">{isOwner ? 'Freelancer' : 'Nama'}</th>
+                  <th className="py-2 pr-3">{isOwner ? 'Crew' : 'Nama'}</th>
                   <th className="py-2">Total Jam Bulan Ini</th>
                 </tr>
               </thead>
@@ -457,7 +457,7 @@ export default function AbsensiPage() {
       {/* ═══ TAB: KOREKSI ═══ */}
       {sectionTab === 'koreksi' && (
         <div className="space-y-4">
-          {/* Freelancer: form ajukan koreksi */}
+          {/* Crew: form ajukan koreksi */}
           {!isOwner && (
             <KoreksiForm
               records={myRecords}
@@ -510,7 +510,7 @@ export default function AbsensiPage() {
             </SectionCard>
           )}
 
-          {/* Freelancer: riwayat koreksi saya */}
+          {/* Crew: riwayat koreksi saya */}
           {!isOwner && (
             <MyCorrections userId={currentUser.id} corrections={corrections} userName={userName} date={date} />
           )}
@@ -654,7 +654,7 @@ export default function AbsensiPage() {
   );
 }
 
-/* ─── Koreksi Form (freelancer) — multi-sesi ──────────────────────────── */
+/* ─── Koreksi Form (crew) — multi-sesi ──────────────────────────── */
 function KoreksiForm({
   records, userName, onSubmit,
 }: {
@@ -779,7 +779,7 @@ function KoreksiForm({
   );
 }
 
-/* ─── My Corrections (freelancer history) ────────────────────────────── */
+/* ─── My Corrections (crew history) ────────────────────────────── */
 function MyCorrections({
   userId, corrections, userName, date,
 }: {

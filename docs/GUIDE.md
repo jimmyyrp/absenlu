@@ -28,7 +28,7 @@
 BLUDECOR adalah sistem manajemen internal untuk bisnis dekorasi event. Sistem ini membantu Anda mengelola:
 
 - **Project/Decor** — data setiap event dekorasi yang dikerjakan
-- **Tim** — absensi, tugas, dan aktivitas freelancer
+- **Tim** — absensi, tugas, dan aktivitas crew
 - **Keuangan** — omzet, pengeluaran, dan profit per project
 - **Dokumentasi** — foto proses pengerjaan
 - **Laporan & Analisa** — performa bisnis dan tim
@@ -74,7 +74,7 @@ BLUDECOR adalah sistem manajemen internal untuk bisnis dekorasi event. Sistem in
 | Analisa | ✅ Full akses |
 | Pengaturan | ⚠️ Terbatas (lihat data, ubah role) |
 
-### 👷 Freelancer (Tim Lapangan)
+### 👷 Crew (Tim Lapangan)
 > Akses terbatas — hanya untuk data yang ditugaskan
 
 | Fitur | Akses |
@@ -106,7 +106,7 @@ Dashboard adalah halaman utama yang menampilkan ringkasan singkat.
 | Quick Access | Tombol cepat ke Absensi, Decor, dan Tugas |
 | Keuangan (Owner) | Omzet, Pengeluaran, Profit bulan ini |
 | Decor Aktif | Info decor yang sedang dipilih beserta progress |
-| Jam Kerja | Total jam kerja Anda (freelancer) atau tim (owner/admin) |
+| Jam Kerja | Total jam kerja Anda (crew) atau tim (owner/admin) |
 | Aktivitas Terbaru | 5 aktivitas terakhir |
 
 ### Langkah Penggunaan:
@@ -134,7 +134,7 @@ Fitur pencatatan kehadiran harian. Self-report — tidak wajib, tapi setiap data
 
 ---
 
-### 👷 Untuk Freelancer:
+### 👷 Untuk Crew:
 
 #### Absen Masuk (Hadir)
 1. Buka halaman **Absensi**
@@ -158,7 +158,7 @@ Fitur pencatatan kehadiran harian. Self-report — tidak wajib, tapi setiap data
 
 **⚠️ Penting:**
 - Absensi hanya bisa dilakukan untuk **hari ini**
-- Freelancer **tidak bisa** melihat atau mengedit data orang lain
+- Crew **tidak bisa** melihat atau mengedit data orang lain
 - Jika ada kesalahan waktu, ajukan **Koreksi** ke admin
 
 ---
@@ -167,16 +167,16 @@ Fitur pencatatan kehadiran harian. Self-report — tidak wajib, tapi setiap data
 
 #### Melihat Status Tim
 1. Buka tab **Status**
-2. Di kolom kanan, lihat **Rekap Tim** — semua freelancer dan status mereka
+2. Di kolom kanan, lihat **Rekap Tim** — semua crew dan status mereka
 3. Summary di atas menunjukkan: Sedang Bekerja, Selesai, Tidak Bekerja, Tidak Mengisi, Perlu Ditinjau
 
 #### Menghapus Session Absensi
-1. Di rekap tim, klik **✕** (ikon X) di samping nama freelancer
+1. Di rekap tim, klik **✕** (ikon X) di samping nama crew
 2. Session akan dihapus
 
 #### Flags / Perlu Ditinjau
 Sistem otomatis mendeteksi anomali:
-- Freelancer yang melakukan **≥3 koreksi** dalam sebulan
+- Crew yang melakukan **≥3 koreksi** dalam sebulan
 - Absen masuk di **luar jam normal** (sebelum jam 5 atau setelah jam 21)
 - Durasi kerja **terlalu pendek** (< 30 menit)
 
@@ -192,7 +192,7 @@ Sistem otomatis mendeteksi anomali:
 
 #### Rekap Jam Kerja
 1. Buka tab **Rekap**
-2. Lihat total jam kerja semua freelancer bulan ini
+2. Lihat total jam kerja semua crew bulan ini
 
 ---
 
@@ -251,7 +251,7 @@ Pusat data sistem — setiap event dekorasi tercatat sebagai "Decor".
 
 ---
 
-### 👷 Untuk Freelancer:
+### 👷 Untuk Crew:
 - Hanya melihat decor yang **punya tugas** untuk mereka
 - Klik **"Pilih"** untuk melihat detail tugas
 
@@ -308,7 +308,7 @@ Kelola daftar tugas untuk setiap decor yang aktif.
 
 ---
 
-### 👷 Untuk Freelancer:
+### 👷 Untuk Crew:
 - Hanya melihat tugas yang **ditugaskan untuk mereka**
 - Klik **☐** untuk menandai selesai
 - melihat status badge (tidak bisa mengubah)
@@ -340,7 +340,7 @@ Catat apa yang benar-benar Anda kerjakan hari ini.
 
 ---
 
-### Semua Role (Freelancer, Admin, Owner):
+### Semua Role (Crew, Admin, Owner):
 
 #### Mencatat Kegiatan Baru
 1. Buka halaman **Kegiatan**
@@ -359,7 +359,7 @@ Catat apa yang benar-benar Anda kerjakan hari ini.
 
 #### Menghapus Kegiatan
 - Owner/Admin bisa menghapus kegiatan siapa saja
-- Freelancer hanya bisa menghapus kegiatan sendiri
+- Crew hanya bisa menghapus kegiatan sendiri
 - Klik ikon **🗑️** di samping kegiatan
 
 ---
@@ -388,7 +388,7 @@ Upload dan kelola foto dokumentasi per decor.
 - Hover (arahkan mouse) ke foto yang ingin dihapus
 - Klik ikon **🗑️** yang muncul di pojok kanan atas foto
 - Owner/Admin bisa menghapus foto siapa saja
-- Freelancer hanya bisa menghapus foto sendiri
+- Crew hanya bisa menghapus foto sendiri
 
 ---
 
@@ -406,7 +406,7 @@ Kelola biaya operasional, material, dan tenaga kerja.
 |------|-----------------|
 | **Transportasi & Logistik** | BBM, Parkir, Tol, Sewa Kendaraan, Kurir |
 | **Material Decor** | Bunga, Kain, Backdrop, Kayu, Akrilik, Balon, Lighting |
-| **Tenaga Kerja** | Freelancer, Harian, Helper, Driver, Crew, Lembur |
+| **Tenaga Kerja** | Harian, Helper, Driver, Crew, Lembur |
 | **Operasional Kantor** | Listrik, Internet, Sewa, ATK, Maintenance |
 | **Lainnya** | Konsumsi, Dokumentasi, Administrasi, Marketing |
 
@@ -458,7 +458,7 @@ Ringkasan keuangan & performa project per bulan.
 | **Stat Cards** | Total Decor, Omzet, Pengeluaran, Profit |
 | **Breakdown Pengeluaran** | Pie chart per grup kategori |
 | **Pengeluaran per Kategori** | Bar chart detail per kategori |
-| **Jam Kerja Freelancer** | Tabel jam kerja dan jumlah aktivitas |
+| **Jam Kerja Crew** | Tabel jam kerja dan jumlah aktivitas |
 | **Rekap Profit per Decor** | Tabel omzet, pengeluaran, profit, margin per decor |
 | **Omzet vs Pengeluaran** | Bar chart per decor |
 
@@ -502,7 +502,7 @@ Performa bulanan, keuangan, dan aktivitas tim dalam 6 bulan terakhir.
 |--------|------------|
 | **Insight Otomatis** | Ringkasan otomatis perubahan dari bulan ke bulan |
 | **Performa Bulanan** | Tabel perbandingan 6 bulan (Decor, Omzet, Pengeluaran, Profit) |
-| **Stat Cards** | Decor bulan ini, Profit, Jam Kerja, Freelancer Aktif |
+| **Stat Cards** | Decor bulan ini, Profit, Jam Kerja, Crew Aktif |
 | **Omzet vs Pengeluaran** | Bar chart 6 bulan |
 | **Profit** | Line chart tren profit 6 bulan |
 
@@ -522,8 +522,8 @@ Performa bulanan, keuangan, dan aktivitas tim dalam 6 bulan terakhir.
 #### Stat Cards
 - **Decor:** Jumlah project bulan ini + persentase perubahan
 - **Profit:** Total profit + nominal lengkap
-- **Jam Kerja:** Total jam kerja semua freelancer
-- **Freelancer Aktif:** Berapa orang yang aktif bulan ini dari total anggota
+- **Jam Kerja:** Total jam kerja semua crew
+- **Crew Aktif:** Berapa orang yang aktif bulan ini dari total anggota
 
 ---
 
@@ -554,7 +554,7 @@ Kelola user, kategori pekerjaan, dan konfigurasi sistem.
 2. Isi formulir:
    - **Nama Lengkap** *(wajib)*
    - **Username** *(wajib)* — untuk login
-   - **Role** — Owner, Admin, atau Freelancer
+   - **Role** — Owner, Admin, atau Crew
    - **No. HP** *(opsional)*
 3. Klik **"Tambah User"**
 
@@ -565,7 +565,7 @@ Kelola user, kategori pekerjaan, dan konfigurasi sistem.
 
 #### Mengubah Role
 1. Di daftar anggota, klik dropdown **Role** pada nama yang dipilih
-2. Pilih role baru (Owner / Admin / Freelancer)
+2. Pilih role baru (Owner / Admin / Crew)
 
 #### Mengaktifkan/Menonaktifkan Anggota
 1. Gunakan **saklar (toggle)** di samping nama anggota
@@ -651,13 +651,13 @@ Kelola user, kategori pekerjaan, dan konfigurasi sistem.
 A: Data tersimpan di browser (localStorage). Gunakan browser yang sama, atau export data sebelum ganti.
 
 **Q: Saya salah absen, bagaimana cara memperbaiki?**
-A: Freelancer bisa ajukan **Koreksi** ke admin. Admin/Owner bisa langsung mengedit atau menghapus session di tab Status.
+A: Crew bisa ajukan **Koreksi** ke admin. Admin/Owner bisa langsung mengedit atau menghapus session di tab Status.
 
 **Q: Saya tidak bisa menghapus pengeluaran?**
 A: Pastikan Anda login sebagai **Owner** atau **Admin**.
 
 **Q: Decor yang saya pilih tidak muncul di Tugas?**
-A: Pastikan decor sudah dipilih sebagai **Decor Aktif**. Freelancer hanya melihat decor yang punya tugas untuk mereka.
+A: Pastikan decor sudah dipilih sebagai **Decor Aktif**. Crew hanya melihat decor yang punya tugas untuk mereka.
 
 **Q: Bagaimana cara melihat profit per project?**
 A: Buka halaman **Laporan**, lihat tabel **Rekap Profit per Decor**.
@@ -665,8 +665,8 @@ A: Buka halaman **Laporan**, lihat tabel **Rekap Profit per Decor**.
 **Q: Siapa yang bisa melihat audit log?**
 A: Hanya **Owner** dan **Admin**.
 
-**Q: Apakah freelancer bisa melihat data keuangan?**
-A: **Tidak.** Freelancer hanya melihat data yang relevan dengan tugas mereka.
+**Q: Apakah crew bisa melihat data keuangan?**
+A: **Tidak.** Crew hanya melihat data yang relevan dengan tugas mereka.
 
 **Q: Bagaimana cara menambahkan anggota tim baru?**
 A: Buka **Pengaturan → Tim & Akses → + Tambah User** (hanya Owner yang bisa).

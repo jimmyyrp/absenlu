@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useState, useCallback } from 'react';
-import { Plus, Trash2, CheckSquare, Square, ListChecks, LayoutList, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, ListChecks, LayoutList, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -28,7 +28,7 @@ const STATUSES: TaskStatus[] = ['belum', 'dikerjakan', 'selesai', 'terhambat'];
 
 const STATUS_TABS = [
   { value: 'all', label: 'Semua', icon: LayoutList },
-  { value: 'belum', label: 'Belum', icon: Square },
+  { value: 'belum', label: 'Belum', icon: ListChecks },
   { value: 'dikerjakan', label: 'Dikerjakan', icon: Clock },
   { value: 'selesai', label: 'Selesai', icon: CheckCircle },
   { value: 'terhambat', label: 'Terhambat', icon: AlertTriangle },
@@ -38,7 +38,7 @@ type StatusTab = typeof STATUS_TABS[number]['value'];
 const VALID_TABS: string[] = ['all', ...STATUSES];
 
 export default function TodoPage() {
-  const { state, currentUser, selectedDecor, tasks, addTask, updateTask, deleteTask, toggleTask } = useOps();
+  const { state, currentUser, selectedDecor, tasks, addTask, updateTask, deleteTask } = useOps();
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -55,7 +55,6 @@ export default function TodoPage() {
 
   const [addOpen, setAddOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
-  const [confirmToggle, setConfirmToggle] = useState<Task | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Task | null>(null);
   const { locked, run } = useSubmitLock();
 
@@ -98,11 +97,16 @@ export default function TodoPage() {
     });
   };
 
+  const userName = (id?: string) => {
+    if (!id) return null;
+    return state.users.find((u) => u.id === id)?.name || id;
+  };
+
   return (
     <div>
       <PageHeader
         title="Daftar Tugas"
-        subtitle={selectedDecor ? `Tugas untuk: ${selectedDecor.name}` : 'Pilih decor terlebih dahulu'}
+        subtitle={selectedDecor ? `Alur pekerjaan untuk: ${selectedDecor.name}` : 'Pilih decor terlebih dahulu'}
       />
 
       {!selectedDecor ? (
@@ -111,7 +115,7 @@ export default function TodoPage() {
         <div className="space-y-4">
           {/* Daftar tugas */}
           <SectionCard
-            title={`Tugas — ${selectedDecor.name}`}
+            title={`Alur Tugas — ${selectedDecor.name}`}
             action={
               <div className="flex items-center gap-3">
                 <span className="hidden sm:flex items-center gap-2 text-[10px] font-bold text-slate-400">
@@ -161,19 +165,34 @@ export default function TodoPage() {
             {decorTasks.length === 0 ? (
               <EmptyState icon={<ListChecks size={20} />} title="Belum ada tugas" sub={isManager ? 'Tambahkan dari template atau buat tugas baru.' : 'Belum ada tugas untuk decor ini.'} />
             ) : (
-              <ul className="divide-y divide-slate-50">
-                {filteredTasks.map((t: Task) => {
+              <ol className="relative">
+                {filteredTasks.map((t: Task, idx) => {
                   const isDone = t.status === 'selesai';
+                  const assignee = userName(t.assigneeId);
                   return (
-                    <li key={t.id} className="py-3 flex items-start gap-3">
-                      <button onClick={() => setConfirmToggle(t)} className="mt-0.5 shrink-0 text-slate-300 hover:text-emerald-500" aria-label="toggle">
-                        {isDone ? <CheckSquare size={20} className="text-emerald-500" /> : <Square size={20} />}
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        <p className={cn("text-sm font-semibold leading-snug", isDone ? "text-slate-400 line-through" : "text-navy")}>{t.title}</p>
-                        <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                          {isManager ? (
-                            <>
+                    <li key={t.id} className="relative flex items-start gap-3 pb-5 last:pb-0">
+                      {/* Connector line */}
+                      {idx < filteredTasks.length - 1 && (
+                        <span className="absolute left-[17px] top-9 bottom-0 w-px bg-slate-200" />
+                      )}
+                      {/* Step number */}
+                      <span className={cn(
+                        "relative z-10 mt-0.5 shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-[11px] font-black border-2",
+                        isDone
+                          ? "bg-emerald-500 border-emerald-500 text-white"
+                          : t.status === 'dikerjakan'
+                            ? "bg-amber-500 border-amber-500 text-white"
+                            : t.status === 'terhambat'
+                              ? "bg-red-500 border-red-500 text-white"
+                              : "bg-white border-slate-300 text-slate-400",
+                      )}>
+                        {idx + 1}
+                      </span>
+                      <div className="flex-1 min-w-0 pt-1">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <p className={cn("text-sm font-semibold leading-snug", isDone ? "text-slate-400" : "text-navy")}>{t.title}</p>
+                          <div className="flex items-center gap-2">
+                            {(isManager || t.assigneeId === currentUser.id) ? (
                               <Select value={t.status} onValueChange={(v) => updateTask(t.id, { status: v as TaskStatus })}>
                                 <SelectTrigger className="h-7 text-[11px] min-w-0">
                                   <SelectValue>{TASK_STATUS_LABEL[t.status]}</SelectValue>
@@ -182,21 +201,26 @@ export default function TodoPage() {
                                   {STATUSES.map((s) => <SelectItem key={s} value={s}>{TASK_STATUS_LABEL[s]}</SelectItem>)}
                                 </SelectContent>
                               </Select>
-                            </>
-                          ) : (
-                            <StatusBadge color={TASK_STATUS_COLOR[t.status]} label={TASK_STATUS_LABEL[t.status]} />
-                          )}
+                            ) : (
+                              <StatusBadge color={TASK_STATUS_COLOR[t.status]} label={TASK_STATUS_LABEL[t.status]} />
+                            )}
+                            {isManager && (
+                              <button onClick={() => setConfirmDelete(t)} className="text-slate-300 hover:text-red-500 shrink-0" aria-label="hapus">
+                                <Trash2 size={16} />
+                              </button>
+                            )}
+                          </div>
                         </div>
+                        {assignee && (
+                          <p className="text-[10px] text-slate-400 mt-1">
+                            Penanggung jawab: <span className="font-semibold text-navy">{assignee}</span>
+                          </p>
+                        )}
                       </div>
-                      {isManager && (
-                        <button onClick={() => setConfirmDelete(t)} className="mt-0.5 text-slate-300 hover:text-red-500 shrink-0" aria-label="hapus">
-                          <Trash2 size={16} />
-                        </button>
-                      )}
                     </li>
                   );
                 })}
-              </ul>
+              </ol>
             )}
           </SectionCard>
         </div>
@@ -206,9 +230,9 @@ export default function TodoPage() {
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-navy">Tambah Tugas Baru</DialogTitle>
+            <DialogTitle className="text-navy">Tambah Langkah Kerja</DialogTitle>
             <DialogDescription className="text-sm text-slate-500">
-              Tambahkan tugas untuk decor: {selectedDecor?.name}
+              Tambahkan langkah pekerjaan untuk decor: {selectedDecor?.name}
             </DialogDescription>
           </DialogHeader>
 
@@ -248,38 +272,13 @@ export default function TodoPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Confirm toggle dialog */}
-      <AlertDialog open={!!confirmToggle} onOpenChange={(open) => !open && setConfirmToggle(null)}>
-        <AlertDialogContent className="rounded-2xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-navy">
-              {confirmToggle?.status === 'selesai' ? 'Batalkan tugas ini?' : 'Tandai tugas selesai?'}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {confirmToggle?.status === 'selesai'
-                ? `"${confirmToggle?.title}" akan dikembalikan ke status belum dikerjakan.`
-                : `Tandai "${confirmToggle?.title}" sebagai selesai?`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-emerald-600 hover:bg-emerald-700 text-white"
-              onClick={() => { if (confirmToggle) { toggleTask(confirmToggle.id); setConfirmToggle(null); } }}
-            >
-              Ya, Lanjutkan
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Confirm delete dialog */}
       <AlertDialog open={!!confirmDelete} onOpenChange={(open) => !open && setConfirmDelete(null)}>
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-navy">Hapus tugas ini?</AlertDialogTitle>
+            <AlertDialogTitle className="text-navy">Hapus langkah ini?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tugas <span className="font-semibold text-navy">"{confirmDelete?.title}"</span> akan dihapus secara permanen dari decor <span className="font-semibold text-navy">{selectedDecor?.name}</span>. Tindakan ini tidak dapat dibatalkan.
+              Langkah <span className="font-semibold text-navy">"{confirmDelete?.title}"</span> akan dihapus secara permanen dari decor <span className="font-semibold text-navy">{selectedDecor?.name}</span>. Tindakan ini tidak dapat dibatalkan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

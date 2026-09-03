@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://bludecor.id'),
   title: 'BLUDECOR OPS – Operasional, Aktivitas & Keuangan Dekorasi',
   description: 'Sistem operasional internal BluDecor: kelola decor, to-do, kegiatan, absensi, dokumentasi, dan keuangan (omzet, pengeluaran, profit).',
-  keywords: 'bludecor ops, sistem operasional dekorasi, manajemen dekorasi, keuangan dekorasi, absensi freelancer',
+  keywords: 'bludecor ops, sistem operasional dekorasi, manajemen dekorasi, keuangan dekorasi, absensi crew',
   authors: [{ name: 'BluDecor' }],
   robots: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1',
   alternates: {

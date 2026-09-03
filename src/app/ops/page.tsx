@@ -43,7 +43,7 @@ function QuickCard({
 /* ─── Dashboard ───────────────────────────────────────────────────────────── */
 export default function DashboardPage() {
   const { state, currentUser, decors, activeDecors, selectedDecor, tasks, activities, attendance, expenses } = useOps();
-  const isFreelancer = currentUser.role === 'freelancer';
+  const isCrew = currentUser.role === 'crew';
   const isOwner = currentUser.role === 'owner';
   const isManager = isOwner || currentUser.role === 'admin';
 
@@ -59,10 +59,10 @@ export default function DashboardPage() {
     () => new Set(tasks.filter((task) => task.assigneeId === currentUser.id).map((task) => task.decorId)),
     [tasks, currentUser.id],
   );
-  const visibleDecors = isFreelancer ? activeDecors.filter((decor) => myDecorIds.has(decor.id)) : activeDecors;
-  const visibleSelectedDecor = isFreelancer && selectedDecor && !myDecorIds.has(selectedDecor.id) ? undefined : selectedDecor;
+  const visibleDecors = isCrew ? activeDecors.filter((decor) => myDecorIds.has(decor.id)) : activeDecors;
+  const visibleSelectedDecor = isCrew && selectedDecor && !myDecorIds.has(selectedDecor.id) ? undefined : selectedDecor;
 
-  const freelancerStat = useMemo(() => {
+  const crewStat = useMemo(() => {
     const hourMap = new Map(hourData.map((h) => [h.userId, h.minutes]));
     const actMap = new Map<string, number>();
     for (const a of activities) {
@@ -70,34 +70,34 @@ export default function DashboardPage() {
       actMap.set(a.userId, (actMap.get(a.userId) || 0) + 1);
     }
     return state.users
-      .filter((u) => u.role === 'freelancer' && u.active)
+      .filter((u) => u.role === 'crew' && u.active)
       .map((u) => ({ user: u, hours: hourMap.get(u.id) || 0, activities: actMap.get(u.id) || 0 }))
       .filter((x) => x.hours > 0 || x.activities > 0)
       .sort((a, b) => b.hours - a.hours);
   }, [state.users, hourData, activities, month]);
 
-  const teamMinutes = freelancerStat.reduce((t, m) => t + m.hours, 0);
+  const teamMinutes = crewStat.reduce((t, m) => t + m.hours, 0);
   const teamDuration = formatDuration(teamMinutes);
 
   const selectedTasks = useMemo(() => {
     if (!selectedDecor) return [];
     let base = tasks.filter((t) => t.decorId === selectedDecor.id);
-    if (isFreelancer) base = base.filter((t) => t.assigneeId === currentUser.id);
+    if (isCrew) base = base.filter((t) => t.assigneeId === currentUser.id);
     return base.sort((a, b) => a.order - b.order);
-  }, [tasks, selectedDecor, isFreelancer, currentUser.id]);
+  }, [tasks, selectedDecor, isCrew, currentUser.id]);
 
   const selectedDone = selectedTasks.filter((t) => t.status === 'selesai').length;
   const selectedProgress = selectedTasks.length ? Math.round((selectedDone / selectedTasks.length) * 100) : 0;
 
-  const pendingTasks = isFreelancer
+  const pendingTasks = isCrew
     ? tasks.filter((t) => t.assigneeId === currentUser.id && t.status !== 'selesai').length
     : tasks.filter((t) => t.status !== 'selesai').length;
 
   const recentActivities = useMemo(() => {
     const base = [...activities].sort((a, b) => (a.at < b.at ? 1 : -1));
-    const filtered = isFreelancer ? base.filter((a) => a.userId === currentUser.id) : base;
+    const filtered = isCrew ? base.filter((a) => a.userId === currentUser.id) : base;
     return filtered.slice(0, 5);
-  }, [activities, isFreelancer, currentUser.id]);
+  }, [activities, isCrew, currentUser.id]);
 
   return (
     <div className="space-y-5">
@@ -184,15 +184,15 @@ export default function DashboardPage() {
       )}
 
       {/* ── Work Hours ─────────────────────────────────────────────────────── */}
-      <SectionCard title={isFreelancer ? 'Jam Kerja Saya' : 'Jam Kerja Tim'}>
+      <SectionCard title={isCrew ? 'Jam Kerja Saya' : 'Jam Kerja Tim'}>
         <div className="flex items-baseline gap-2">
           <p className="text-2xl font-headline font-bold text-navy">
-            {isFreelancer ? myDuration.h : teamDuration.h}
+            {isCrew ? myDuration.h : teamDuration.h}
             <span className="ml-1 text-sm text-slate-400">jam</span>
           </p>
-          <p className="text-[10px] text-slate-400">{isFreelancer ? 'bulan ini' : 'total tim'}</p>
+          <p className="text-[10px] text-slate-400">{isCrew ? 'bulan ini' : 'total tim'}</p>
         </div>
-        {isManager && freelancerStat.length > 0 && (
+        {isManager && crewStat.length > 0 && (
           <div className="mt-3 overflow-x-auto no-scrollbar">
             <table className="w-full text-left">
               <thead>
@@ -202,7 +202,7 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {freelancerStat.slice(0, 5).map(({ user, hours }) => (
+                {crewStat.slice(0, 5).map(({ user, hours }) => (
                   <tr key={user.id} className="border-b border-slate-50">
                     <td className="py-2 pr-3 text-[11px] font-semibold text-navy">{user.name}</td>
                     <td className="py-2 text-[11px] text-slate-600">{formatDuration(hours).label}</td>
@@ -216,7 +216,7 @@ export default function DashboardPage() {
 
       {/* ── Recent Activities ──────────────────────────────────────────────── */}
       <SectionCard
-        title={isFreelancer ? 'Aktivitas Saya' : 'Aktivitas Terbaru'}
+        title={isCrew ? 'Aktivitas Saya' : 'Aktivitas Terbaru'}
         action={<Link href="/ops/kegiatan" className="text-[10px] font-bold text-gold uppercase tracking-widest">Semua</Link>}
       >
         {recentActivities.length === 0 ? (
@@ -225,14 +225,14 @@ export default function DashboardPage() {
           <ul className="divide-y divide-slate-50">
             {recentActivities.map((a) => (
               <li key={a.id} className="py-2.5 flex items-start gap-3">
-                {!isFreelancer && (
+                {!isCrew && (
                   <span className="h-7 w-7 rounded-full bg-gold/15 text-gold text-[9px] font-bold flex items-center justify-center shrink-0">
                     {userFirst(state, a.userId)}
                   </span>
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="text-[11px] text-slate-600 truncate">
-                    {isFreelancer ? (
+                    {isCrew ? (
                       <span className="font-bold text-navy">{a.activityType}</span>
                     ) : (
                       <><span className="font-bold text-navy">{state.users.find((u) => u.id === a.userId)?.name}</span>{' '}&middot; {a.activityType}</>

@@ -106,7 +106,7 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const loaded = loadState();
-    // User aktif mengikuti role yang login (u1=owner u2=admin u3=freelancer)
+    // User aktif mengikuti role yang login (u1=owner u2=admin u3=crew)
     const uid = opsUserId();
     const role = opsRole();
     const username = localStorage.getItem('bludecor_ops_username')?.trim().toLowerCase();
@@ -460,7 +460,7 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
       patchState((p) => {
         const act = p.activities.find((a) => a.id === id);
         if (!act) return p;
-        // Freelancer cuma bisa hapus aktivitas sendiri
+        // Crew cuma bisa hapus aktivitas sendiri
         if (!isManager && act.userId !== p.currentUserId) return p;
         return { ...p, activities: p.activities.filter((a) => a.id !== id) };
       }),

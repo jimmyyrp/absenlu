@@ -52,7 +52,7 @@ export default function AnalisaPage() {
   const hoursPct = pct(cur?.hours || 0, prev?.hours || 0);
   const decorPct = pct(cur?.decor || 0, prev?.decor || 0);
 
-  const totalFreelancers = state.users.filter((u) => u.role === 'freelancer' && u.active).length;
+  const totalCrew = state.users.filter((u) => u.role === 'crew' && u.active).length;
   const activeMonthUsers = new Set(
     attendance.filter((a) => a.date.slice(0, 7) === cur?.key && (a.status === 'hadir' || a.status === 'selesai')).map((a) => a.userId),
   ).size;
@@ -63,7 +63,7 @@ export default function AnalisaPage() {
     const d = pct(cur?.decor || 0, prev?.decor || 0);
     out.push({ icon: 'decor', text: `Jumlah decor ${d >= 0 ? 'meningkat' : 'menurun'} ${Math.abs(d)}% (${prev?.decor || 0} → ${cur?.decor || 0} project).`, up: d >= 0 });
     out.push({ icon: 'profit', text: `Profit ${profitPct >= 0 ? 'meningkat' : 'turun'} ${Math.abs(profitPct)}% dibanding bulan sebelumnya.`, up: profitPct >= 0 });
-    out.push({ icon: 'jam', text: `Total jam kerja freelancer ${hoursPct >= 0 ? 'meningkat' : 'turun'} ${Math.abs(hoursPct)}%.`, up: hoursPct >= 0 });
+    out.push({ icon: 'jam', text: `Total jam kerja crew ${hoursPct >= 0 ? 'meningkat' : 'turun'} ${Math.abs(hoursPct)}%.`, up: hoursPct >= 0 });
     if (cur?.topExpense && cur.topExpense !== '—') {
       out.push({ icon: 'material', text: `${cur.topExpense} menjadi kategori pengeluaran terbesar bulan ini.`, up: true });
     }
@@ -143,7 +143,7 @@ export default function AnalisaPage() {
         <StatCard icon={<CalendarRange size={18} />} label="Decor (bulan ini)" value={cur?.decor || 0} sub={`${statsChange(decorPct)} vs bulan lalu`} tone="navy" />
         <StatCard icon={<Wallet size={18} />} label="Profit" value={formatIDRCompact(cur?.profit || 0)} sub={formatIDR(cur?.profit || 0)} tone="green" />
         <StatCard icon={<Clock4 size={18} />} label="Jam Kerja" value={`${Math.floor((cur?.hours || 0) / 60)} jam`} sub={formatDuration(cur?.hours || 0).label} tone="gold" />
-        <StatCard icon={<Users size={18} />} label="Freelancer Aktif" value={activeMonthUsers} sub={`dari ${totalFreelancers} anggota`} tone="sky" />
+        <StatCard icon={<Users size={18} />} label="Crew Aktif" value={activeMonthUsers} sub={`dari ${totalCrew} anggota`} tone="sky" />
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4">

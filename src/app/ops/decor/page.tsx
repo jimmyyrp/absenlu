@@ -206,7 +206,7 @@ export default function DecorPage() {
   const { currentUser, decors, addDecor, updateDecor, deleteDecor, selectDecor, tasks } = useOps();
   const isManager = currentUser.role === 'owner' || currentUser.role === 'admin';
 
-  // Freelancer hanya lihat decor yang punya tugas untuk mereka
+  // Crew hanya lihat decor yang punya tugas untuk mereka
   const visibleDecors = useMemo(() => {
     if (isManager) return decors;
     const myDecorIds = new Set(tasks.filter((t) => t.assigneeId === currentUser.id).map((t) => t.decorId));

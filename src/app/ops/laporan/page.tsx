@@ -38,7 +38,7 @@ export default function LaporanPage() {
   const breakByGroup = useMemo(() => {
     const groups = [
       { key: 'Material Decor', keys: ['Material Decor', 'Bunga', 'Kain', 'Backdrop', 'Kayu', 'Akrilik', 'Balon', 'Pita', 'Lem', 'Kabel', 'Lighting', 'Properti', 'Printing'], color: '#8C7216' },
-      { key: 'Tenaga Kerja', keys: ['Tenaga Kerja', 'Freelancer', 'Harian', 'Helper', 'Driver', 'Crew', 'Lembur'], color: '#C5A358' },
+      { key: 'Tenaga Kerja', keys: ['Tenaga Kerja', 'Harian', 'Helper', 'Driver', 'Crew', 'Lembur'], color: '#C5A358' },
       { key: 'Transportasi', keys: ['Transportasi', 'BBM', 'Parkir', 'Tol', 'Sewa Kendaraan', 'Kurir', 'Logistik', 'Operasional'], color: '#19376D' },
       { key: 'Operasional Kantor', keys: ['Operasional Kantor', 'Listrik', 'Internet', 'Sewa', 'ATK', 'Maintenance', 'Peralatan'], color: '#475569' },
       { key: 'Lainnya', keys: ['Lainnya', 'Konsumsi', 'Dokumentasi', 'Administrasi', 'Marketing', 'Biaya Tak Terduga'], color: '#94a3b8' },
@@ -60,9 +60,9 @@ export default function LaporanPage() {
     [decors, expenses, month],
   );
 
-  const freelancerAct = useMemo(() => {
+  const crewAct = useMemo(() => {
     return state.users
-      .filter((u) => u.role === 'freelancer')
+      .filter((u) => u.role === 'crew')
       .map((u) => {
         const h = hourData.find((x) => x.userId === u.id);
         const acts = monthActivities.filter((a) => a.userId === u.id).length;
@@ -146,7 +146,7 @@ export default function LaporanPage() {
             )}
           </SectionCard>
 
-          <SectionCard title={`Jam Kerja Freelancer — ${monthLabel}`}>
+          <SectionCard title={`Jam Kerja Crew — ${monthLabel}`}>
             <div className="mb-3">
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Jam Kerja Bulan Ini</p>
               <p className="text-2xl font-headline font-bold text-navy">
@@ -157,13 +157,13 @@ export default function LaporanPage() {
               <table className="w-full text-left">
                 <thead>
                   <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
-                    <th className="py-2 pr-3">Freelancer</th>
+                    <th className="py-2 pr-3">Crew</th>
                     <th className="py-2 pr-3">Jam Kerja</th>
                     <th className="py-2">Aktivitas</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {freelancerAct.map(({ u, hours, acts }) => (
+                  {crewAct.map(({ u, hours, acts }) => (
                     <tr key={u.id} className="border-b border-slate-50">
                       <td className="py-2 pr-3 text-sm font-semibold text-navy">{u.name}</td>
                       <td className="py-2 pr-3 text-sm text-slate-600">{formatDuration(hours).label}</td>

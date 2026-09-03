@@ -11,7 +11,7 @@ export const PRIMARY_NAV = [
   { label: 'Keuangan', href: '/ops/pengeluaran', icon: Wallet },
 ] as const;
 
-export const FREELANCER_PRIMARY_NAV = PRIMARY_NAV.filter((item) => item.href !== '/ops/pengeluaran');
+export const CREW_PRIMARY_NAV = PRIMARY_NAV.filter((item) => item.href !== '/ops/pengeluaran');
 
 export const SECONDARY_NAV = [
   { label: 'Kegiatan', href: '/ops/kegiatan', icon: ClipboardList },
@@ -19,16 +19,16 @@ export const SECONDARY_NAV = [
   { label: 'Laporan', href: '/ops/laporan', icon: FileText },
 ] as const;
 
-export const FREELANCER_NAV = [
-  ...FREELANCER_PRIMARY_NAV,
+export const CREW_NAV = [
+  ...CREW_PRIMARY_NAV,
   { label: 'Dokumentasi', href: '/ops/dokumentasi', icon: Image },
 ] as const;
 
 export const MANAGER_NAV = [...PRIMARY_NAV, ...SECONDARY_NAV] as const;
 export const OWNER_NAV = [...MANAGER_NAV, { label: 'Pengaturan', href: '/ops/pengaturan', icon: Settings }] as const;
 
-export const FREELANCER_ROUTES = ['/ops', '/ops/decor', '/ops/todo', '/ops/absensi', '/ops/dokumentasi', '/ops/kegiatan'] as const;
-export const MANAGER_ROUTES = [...FREELANCER_ROUTES, '/ops/analisa', '/ops/laporan', '/ops/pengeluaran'] as const;
+export const CREW_ROUTES = ['/ops', '/ops/decor', '/ops/todo', '/ops/absensi', '/ops/dokumentasi', '/ops/kegiatan'] as const;
+export const MANAGER_ROUTES = [...CREW_ROUTES, '/ops/analisa', '/ops/laporan', '/ops/pengeluaran'] as const;
 export const OWNER_ROUTES = [...MANAGER_ROUTES, '/ops/pengaturan'] as const;
 
 export function isActivePath(pathname: string, href: string) {
