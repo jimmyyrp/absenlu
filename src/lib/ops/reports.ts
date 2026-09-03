@@ -112,3 +112,60 @@ export function decorFinancial(
     margin: revenue ? Math.round(((revenue - exp) / revenue) * 100) : 0,
   };
 }
+
+export type DecorScheduleState =
+  | 'no-schedule' // decor tanpa jadwal jam kerja -> fleksibel
+  | 'future' // belum sampai hari kerja decor
+  | 'before-start' // hari kerja, sebelum jam mulai
+  | 'running' // sedang dalam rentang jadwal kerja
+  | 'finished'; // sudah melewati jadwal selesai -> locked
+
+function toMinutes(hhmm?: string): number | null {
+  if (!hhmm) return null;
+  const [h, m] = hhmm.split(':').map(Number);
+  if (Number.isNaN(h) || Number.isNaN(m)) return null;
+  return h * 60 + m;
+}
+
+export function sameDay(d1: string, d2: string): boolean {
+  return d1.slice(0, 10) === d2.slice(0, 10);
+}
+
+export function decorScheduleState(decor: DecorProject, now = new Date()): DecorScheduleState {
+  if (decor.status === 'dibatalkan' || decor.status === 'selesai') return 'finished';
+  if (!decor.workStart || !decor.workEnd || !decor.date) return 'no-schedule';
+
+  const workMin = toMinutes(decor.workStart);
+  const endMin = toMinutes(decor.workEnd);
+  if (workMin === null || endMin === null) return 'no-schedule';
+  if (!sameDay(decor.date, now.toISOString().slice(0, 10))) {
+    return decor.date < now.toISOString().slice(0, 10) ? 'finished' : 'future';
+  }
+
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  if (nowMin < workMin) return 'before-start';
+  if (nowMin <= endMin) return 'running';
+  return 'finished';
+}
+
+export function decorScheduleLabel(decor: DecorProject | undefined): string {
+  if (!decor || !decor.workStart || !decor.workEnd) return 'Tanpa jadwal';
+  return `${decor.workStart} – ${decor.workEnd}`;
+}
+
+export function decorScheduleLocked(decor: DecorProject | undefined, now = new Date()): boolean {
+  if (!decor) return false;
+  const s = decorScheduleState(decor, now);
+  return s === 'finished' || s === 'before-start' || s === 'future';
+}
+
+export function decorScheduleLockReason(decor: DecorProject | undefined, now = new Date()): string | null {
+  if (!decor) return null;
+  const s = decorScheduleState(decor, now);
+  if (s === 'finished') return 'Jadwal kerja decor sudah lewat.';
+  if (s === 'before-start') return 'Jadwal kerja decor belum dimulai.';
+  if (s === 'future') return 'Hari kerja decor belum tiba.';
+  return null;
+}
+
+

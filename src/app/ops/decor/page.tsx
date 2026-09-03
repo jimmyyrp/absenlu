@@ -12,6 +12,7 @@ import {
   type DecorProject, type DecorStatus,
 } from '@/lib/ops/types';
 import { cn } from '@/lib/utils';
+import { decorScheduleLabel } from '@/lib/ops/reports';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -59,6 +60,8 @@ function DecorForm({
   const [status, setStatus] = useState<DecorStatus>(initial?.status || 'draft');
   const [revenue, setRevenue] = useState(initial?.revenue ? String(initial.revenue) : '');
   const [note, setNote] = useState(initial?.note || '');
+  const [workStart, setWorkStart] = useState(initial?.workStart || '');
+  const [workEnd, setWorkEnd] = useState(initial?.workEnd || '');
   const { locked, run } = useSubmitLock();
 
   const handle = async (e: React.FormEvent) => {
@@ -68,6 +71,7 @@ function DecorForm({
       name: name.trim(), client: client.trim() || undefined, category, eventType: category,
       date: date || undefined, location: location.trim() || undefined, status,
       revenue: revenue ? Number(revenue.replace(/[^0-9]/g, '')) : undefined, note: note.trim() || undefined,
+      workStart: workStart || undefined, workEnd: workEnd || undefined,
     }));
   };
 
@@ -103,6 +107,14 @@ function DecorForm({
               {DECOR_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
             </SelectContent>
           </Select>
+        </div>
+        <div>
+          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Jadwal Mulai</Label>
+          <Input type="time" value={workStart} onChange={(e) => setWorkStart(e.target.value)} className="mt-1" />
+        </div>
+        <div>
+          <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Jadwal Selesai</Label>
+          <Input type="time" value={workEnd} onChange={(e) => setWorkEnd(e.target.value)} className="mt-1" />
         </div>
         <div>
           <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Lokasi</Label>
@@ -150,6 +162,8 @@ function DecorCard({
           {d.date && (
             <p className="text-[11px] text-slate-400 mt-0.5 flex items-center gap-1">
               <CalendarRange size={10} /> {new Date(d.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+              <span className="text-slate-300">·</span>
+              <Clock size={10} /> {decorScheduleLabel(d)}
             </p>
           )}
         </div>

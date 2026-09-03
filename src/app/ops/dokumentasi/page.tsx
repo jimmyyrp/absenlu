@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useRef, useState } from 'react';
-import { Image, Plus, Trash2, Download, CloudDownload } from 'lucide-react';
+import { Image, Plus, Trash2, Download, CloudDownload, AlertTriangle } from 'lucide-react';
 import { useOps, userFirst } from '@/lib/ops/store';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { PageHeader, SectionCard, EmptyState, formatDateTime, ConfirmDialog } from '../ops-ui';
 import { useToast } from '@/hooks/use-toast';
 import { useSubmitLock } from '@/hooks/use-submit-lock';
+import { decorScheduleLocked, decorScheduleLockReason } from '@/lib/ops/reports';
 import JSZip from 'jszip';
 
 function slugify(name: string) {
@@ -25,6 +26,8 @@ export default function DokumentasiPage() {
   const [confirmDelete, setConfirmDelete] = useState<(typeof decorPhotos)[number] | null>(null);
   const [downloading, setDownloading] = useState(false);
   const { locked, run } = useSubmitLock();
+  const scheduleLocked = decorScheduleLocked(selectedDecor);
+  const scheduleLockReason = decorScheduleLockReason(selectedDecor);
 
   const decorPhotos = useMemo(
     () => (selectedDecor ? photosForProject(selectedDecor.id) : []),
@@ -40,7 +43,7 @@ export default function DokumentasiPage() {
   };
 
   const save = async () => {
-    if (!selectedDecor || !preview) return;
+    if (!selectedDecor || !preview || decorScheduleLocked(selectedDecor)) return;
     await run(() => {
       addPhoto({ decorId: selectedDecor.id, userId: state.currentUserId, dataUrl: preview, caption: caption.trim() || undefined });
       setPreview('');
@@ -99,7 +102,7 @@ export default function DokumentasiPage() {
                   <CloudDownload size={15} /> {downloading ? 'Mengunduh...' : 'Unduh Semua'}
                 </Button>
               )}
-              <Button onClick={() => fileRef.current?.click()} className="bg-navy hover:bg-gold text-white">
+              <Button onClick={() => fileRef.current?.click()} disabled={scheduleLocked} className="bg-navy hover:bg-gold text-white">
                 <Plus size={15} /> Tambah Foto
               </Button>
             </div>
@@ -107,7 +110,19 @@ export default function DokumentasiPage() {
         }
       />
 
-      <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleFile} />
+      <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleFile} disabled={scheduleLocked} />
+
+      {scheduleLocked && (
+        <SectionCard className="mb-4">
+          <div className="flex items-start gap-2">
+            <AlertTriangle size={16} className="text-red-500 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-[11px] font-bold text-red-600">Upload terkunci</p>
+              <p className="text-[10px] text-red-400 mt-0.5">{scheduleLockReason} Dokumentasi tidak dapat diunggah di luar jadwal kerja decor.</p>
+            </div>
+          </div>
+        </SectionCard>
+      )}
 
       {preview && (
         <SectionCard className="mb-4" title="Unggah Foto Baru">

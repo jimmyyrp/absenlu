@@ -137,14 +137,15 @@ Fitur pencatatan kehadiran harian. Self-report — tidak wajib, tapi setiap data
 ### 👷 Untuk Crew:
 
 #### Absen Masuk (Hadir)
-1. Buka halaman **Absensi**
-2. Pastikan tab **Status** aktif
-3. Klik tombol **🟢 Hadir** (hijau besar)
-4. Waktu masuk otomatis tercatat sesuai jam server
-5. Status berubah menjadi **"Sedang Bekerja"**
+1. **Pilih Decor / Kegiatan dulu** (menu **Decor** atau Current Decor di atas)
+2. Buka halaman **Absensi**
+3. Pastikan tab **Status** aktif
+4. Klik tombol **"Absen Masuk — [nama decor]"** (hijau besar)
+5. Waktu masuk otomatis tercatat sesuai jam server
+6. Status berubah menjadi **"Sedang Bekerja"**
 
 #### Absen Keluar (Selesai)
-1. Setelah selesai bekerja, klik tombol **🔵 Selesai** (biru besar)
+1. Setelah selesai bekerja, klik tombol **"Selesai — [nama decor]"** (biru besar)
 2. Waktu keluar otomatis tercatat
 3. Durasi kerja otomatis dihitung
 
@@ -153,13 +154,13 @@ Fitur pencatatan kehadiran harian. Self-report — tidak wajib, tapi setiap data
 2. Konfirmasi pada dialog yang muncul
 3. Status berubah menjadi **"Tidak Bekerja"**
 
-#### Mengubah Status
-- Jika salah absen "Tidak Bekerja", klik **"Ubah ke Hadir"** untuk memperbaiki
-
 **⚠️ Penting:**
 - Absensi hanya bisa dilakukan untuk **hari ini**
+- Crew **wajib memilih decor/kegiatan dulu** sebelum absen — absensi selalu terkait satu decor
 - Crew **tidak bisa** melihat atau mengedit data orang lain
-- Jika ada kesalahan waktu, ajukan **Koreksi** ke admin
+- Sistem **terkunci** di luar jadwal kerja decor (mis. jadwal decor sudah lewat)
+
+---
 
 ---
 
@@ -225,6 +226,7 @@ Pusat data sistem — setiap event dekorasi tercatat sebagai "Decor".
    - **Kategori** — pilih dari dropdown (Pernikahan, Ulang Tahun, dll)
    - **Tanggal Event** — tanggal pelaksanaan
    - **Status** — pilih status awal (biasanya "Draf")
+   - **Jadwal Mulai / Jadwal Selesai** — jam kerja decor (opsional)
    - **Lokasi** — tempat event
    - **Nilai Proyek/Omzet** — nominal dalam Rupiah
    - **Catatan** — tema, permintaan khusus, dll
@@ -252,8 +254,9 @@ Pusat data sistem — setiap event dekorasi tercatat sebagai "Decor".
 ---
 
 ### 👷 Untuk Crew:
-- Hanya melihat decor yang **punya tugas** untuk mereka
-- Klik **"Pilih"** untuk melihat detail tugas
+- Melihat **semua decor aktif** (bukan hanya yang ditugaskan)
+- Klik **"Pilih"** untuk menjadikan decor sebagai decor aktif
+- Sistem **terkunci** jika jadwal kerja decor sudah lewat (absensi, tugas, dokumentasi tidak bisa diisi)
 
 ---
 

@@ -34,11 +34,11 @@ const users: OpsUser[] = [
 const crewIds = ['u3', 'u4', 'u5'];
 
 // ── Decors ────────────────────────────────────────────────────────────────
-const decorDefs: { name: string; client: string; category: string; days: number; location: string; status: DecorStatus; revenue: number }[] = [
-  { name: 'Pernikahan Rina & Aldi', client: 'Rina & Aldi', category: 'Pernikahan', days: 5, location: 'Hotel Pangeran, Padang', status: 'ongoing', revenue: 8500000 },
-  { name: 'Pernikahan Andi & Siska', client: 'Andi & Siska', category: 'Pernikahan', days: 10, location: 'Hotel Grand Inna, Padang', status: 'persiapan', revenue: 10500000 },
-  { name: 'Acara PT Maju Jaya', client: 'PT Maju Jaya', category: 'Acara Perusahaan', days: 12, location: 'Grand Ballroom, Padang', status: 'ready', revenue: 12000000 },
-  { name: 'Backdrop Hotel Azizi', client: 'Hotel Azizi', category: 'Backdrop', days: -6, location: 'Hotel Azizi, Padang', status: 'selesai', revenue: 25000000 },
+const decorDefs: { name: string; client: string; category: string; days: number; location: string; status: DecorStatus; revenue: number; workStart: string; workEnd: string }[] = [
+  { name: 'Pernikahan Rina & Aldi', client: 'Rina & Aldi', category: 'Pernikahan', days: 5, location: 'Hotel Pangeran, Padang', status: 'ongoing', revenue: 8500000, workStart: '08:00', workEnd: '17:00' },
+  { name: 'Pernikahan Andi & Siska', client: 'Andi & Siska', category: 'Pernikahan', days: 10, location: 'Hotel Grand Inna, Padang', status: 'persiapan', revenue: 10500000, workStart: '07:00', workEnd: '16:00' },
+  { name: 'Acara PT Maju Jaya', client: 'PT Maju Jaya', category: 'Acara Perusahaan', days: 12, location: 'Grand Ballroom, Padang', status: 'ready', revenue: 12000000, workStart: '09:00', workEnd: '18:00' },
+  { name: 'Backdrop Hotel Azizi', client: 'Hotel Azizi', category: 'Backdrop', days: -6, location: 'Hotel Azizi, Padang', status: 'selesai', revenue: 25000000, workStart: '', workEnd: '' },
 ];
 
 const decors: DecorProject[] = decorDefs.map((d) => ({
@@ -51,6 +51,8 @@ const decors: DecorProject[] = decorDefs.map((d) => ({
   location: d.location,
   status: d.status,
   revenue: d.revenue,
+  workStart: d.workStart || undefined,
+  workEnd: d.workEnd || undefined,
   note: '',
   createdAt: atOffset(Math.max(10, 60 - decorDefs.indexOf(d) * 2), 10),
 }));

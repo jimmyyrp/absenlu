@@ -49,6 +49,8 @@ export interface DecorProject {
   location: string;
   status: DecorStatus;
   revenue?: number; // omzet / nilai project
+  workStart?: string; // HH:mm — jam mulai jadwal kerja decor
+  workEnd?: string; // HH:mm — jam selesai jadwal kerja decor
   note?: string;
   createdAt: string;
 }

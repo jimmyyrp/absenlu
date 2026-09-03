@@ -12,7 +12,7 @@ import {
   ATTENDANCE_STATUS_LABEL, ATTENDANCE_STATUS_COLOR,
   type Attendance, type AttendanceCorrection,
 } from '@/lib/ops/types';
-import { monthlyWorkHours, formatDuration, minutesBetween } from '@/lib/ops/reports';
+import { monthlyWorkHours, formatDuration, minutesBetween, decorScheduleLocked, decorScheduleLockReason, decorScheduleLabel } from '@/lib/ops/reports';
 import { opsDevice } from '@/lib/ops/auth';
 import { cn } from '@/lib/utils';
 import { PageHeader, SectionCard, StatusBadge, Pagination, ConfirmDialog } from '../ops-ui';
@@ -258,6 +258,8 @@ export default function AbsensiPage() {
                   const doneRecord = myRecords.find((r) => r.decorId === dt.decorId && r.status === 'selesai');
                   const hasRecord = !!activeRecord || !!doneRecord;
                   const allDone = dt.done === dt.total;
+                  const locked = decorScheduleLocked(selectedDecor);
+                  const lockReason = decorScheduleLockReason(selectedDecor);
 
                   return (
                     <div key={dt.decorId} className="rounded-xl border border-slate-100 bg-slate-50 p-3.5">
@@ -275,6 +277,11 @@ export default function AbsensiPage() {
                         </div>
                       </div>
 
+                      {/* Jadwal decor */}
+                      <p className="text-[10px] text-slate-400 mb-2">
+                        Jadwal kerja: {decorScheduleLabel(selectedDecor)}
+                      </p>
+
                       {/* Detail sesi yang sudah ada */}
                       {doneRecord && (
                         <p className="text-[11px] text-slate-500 mb-2">
@@ -288,8 +295,16 @@ export default function AbsensiPage() {
                         </p>
                       )}
 
-                      {/* Aksi */}
-                      {!hasRecord ? (
+                      {/* Lock bila jadwal lewat / belum mulai */}
+                      {locked && !hasRecord && (
+                        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-center">
+                          <p className="text-[11px] text-red-600 font-bold">{lockReason}</p>
+                          <p className="text-[10px] text-red-400 mt-0.5">Sistem terkunci di luar jadwal kerja decor.</p>
+                        </div>
+                      )}
+
+                      {/* Aksi — bisa mulai hanya dalam jadwal; selesai selalu diizinkan utk sesi aktif */}
+                      {!hasRecord && !locked ? (
                         <Button
                           className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-10 text-sm font-bold"
                           onClick={() => { setHonestyConfirmed(false); setConfirmAttendance({ decorId: dt.decorId, decorName: dt.decorName, mode: 'masuk' }); }}

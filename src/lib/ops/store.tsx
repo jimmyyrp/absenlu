@@ -191,6 +191,8 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
         location: (d.location || '').trim().slice(0, 200),
         status: d.status || 'draft',
         revenue: d.revenue && d.revenue > 0 ? d.revenue : undefined,
+        workStart: d.workStart || undefined,
+        workEnd: d.workEnd || undefined,
         note: (d.note || '').trim().slice(0, 500),
         createdAt: new Date().toISOString(),
       };

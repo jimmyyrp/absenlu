@@ -13,6 +13,7 @@ import {
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useOps } from '@/lib/ops/store';
 import { TASK_STATUS_LABEL, TASK_STATUS_COLOR, type Task, type TaskStatus } from '@/lib/ops/types';
+import { decorScheduleLocked, decorScheduleLockReason } from '@/lib/ops/reports';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,6 +44,8 @@ export default function TodoPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const isManager = currentUser.role === 'owner' || currentUser.role === 'admin';
+  const scheduleLocked = decorScheduleLocked(selectedDecor);
+  const scheduleLockReason = decorScheduleLockReason(selectedDecor);
 
   const rawTab = searchParams.get('tab');
   const statusTab: StatusTab = (rawTab && VALID_TABS.includes(rawTab)) ? (rawTab as StatusTab) : 'all';
@@ -117,7 +120,7 @@ export default function TodoPage() {
                   <ProgressBar value={progress} className="w-16" />
                   {done}/{decorTasks.length}
                 </span>
-                {isManager && (
+                {isManager && !scheduleLocked && (
                   <Button
                     type="button"
                     size="sm"
@@ -130,6 +133,15 @@ export default function TodoPage() {
               </div>
             }
           >
+            {scheduleLocked && (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 mb-4 flex items-start gap-2">
+                <AlertTriangle size={16} className="text-red-500 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-[11px] font-bold text-red-600">Tugas terkunci</p>
+                  <p className="text-[10px] text-red-400 mt-0.5">{scheduleLockReason} Sistem tidak dapat diubah di luar jadwal kerja decor.</p>
+                </div>
+              </div>
+            )}
             {/* Status tabs */}
             <div className="flex gap-1.5 mb-4 overflow-x-auto no-scrollbar pb-1">
               {STATUS_TABS.map((st) => {
@@ -186,7 +198,7 @@ export default function TodoPage() {
                         <div className="flex flex-wrap items-start justify-between gap-2">
                           <p className={cn("text-sm font-semibold leading-snug", isDone ? "text-slate-400" : "text-navy")}>{t.title}</p>
                           <div className="flex items-center gap-2">
-                            <Select value={t.status} onValueChange={(v) => updateTask(t.id, { status: v as TaskStatus })}>
+                            <Select value={t.status} disabled={scheduleLocked} onValueChange={(v) => updateTask(t.id, { status: v as TaskStatus })}>
                               <SelectTrigger className="h-7 text-[11px] min-w-0">
                                 <SelectValue>{TASK_STATUS_LABEL[t.status]}</SelectValue>
                               </SelectTrigger>
