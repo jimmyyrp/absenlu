@@ -193,6 +193,7 @@ export default function LaporanPage() {
         {perDecor.length === 0 ? (
           <p className="text-xs text-slate-400 py-6 text-center">Tidak ada decor pada bulan ini.</p>
         ) : (
+          <>
           <div className="hidden sm:block overflow-x-auto no-scrollbar">
             <table className="w-full text-left">
               <thead>
@@ -243,7 +244,7 @@ export default function LaporanPage() {
                   </div>
                   <div className="flex items-center justify-between text-[11px] border-t border-slate-100 pt-1.5">
                     <span className="text-slate-400">Profit</span>
-                    <span className={cn("font-bold", fin.profit >= 0 ? "text-emerald-600" : "text-red-500")}>{formatIDR(fin.profit)}</span>
+                    <span className={`font-bold ${fin.profit >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{formatIDR(fin.profit)}</span>
                   </div>
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="text-slate-400">Margin</span>
@@ -253,6 +254,7 @@ export default function LaporanPage() {
               </div>
             ))}
           </div>
+          </>
         )}
       </SectionCard>
 
