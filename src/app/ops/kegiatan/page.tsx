@@ -15,7 +15,7 @@ const STATUS_META: Record<TaskStatus, { color: string; text: string; icon: React
 };
 
 export default function KegiatanPage() {
-  const { selectedDecor, tasks, state } = useOps();
+  const { selectedDecor, tasks } = useOps();
 
   const flowTasks = useMemo(() => {
     if (!selectedDecor) return [];
@@ -87,11 +87,6 @@ export default function KegiatanPage() {
                           {meta.icon} {TASK_STATUS_LABEL[t.status]}
                         </span>
                       </div>
-                      {t.assigneeId && (
-                        <p className="text-[10px] text-slate-400 mt-1">
-                          Penanggung jawab: <span className="font-semibold text-navy">{state.users.find((u) => u.id === t.assigneeId)?.name || t.assigneeId}</span>
-                        </p>
-                      )}
                     </div>
                   </li>
                 );

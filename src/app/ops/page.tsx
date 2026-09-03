@@ -55,12 +55,8 @@ export default function DashboardPage() {
   const myHours = hourData.find((h) => h.userId === currentUser.id)?.minutes || 0;
   const myDuration = formatDuration(myHours);
 
-  const myDecorIds = useMemo(
-    () => new Set(tasks.filter((task) => task.assigneeId === currentUser.id).map((task) => task.decorId)),
-    [tasks, currentUser.id],
-  );
-  const visibleDecors = isCrew ? activeDecors.filter((decor) => myDecorIds.has(decor.id)) : activeDecors;
-  const visibleSelectedDecor = isCrew && selectedDecor && !myDecorIds.has(selectedDecor.id) ? undefined : selectedDecor;
+  const visibleDecors = activeDecors;
+  const visibleSelectedDecor = selectedDecor;
 
   const crewStat = useMemo(() => {
     const hourMap = new Map(hourData.map((h) => [h.userId, h.minutes]));
@@ -82,16 +78,13 @@ export default function DashboardPage() {
   const selectedTasks = useMemo(() => {
     if (!selectedDecor) return [];
     let base = tasks.filter((t) => t.decorId === selectedDecor.id);
-    if (isCrew) base = base.filter((t) => t.assigneeId === currentUser.id);
     return base.sort((a, b) => a.order - b.order);
-  }, [tasks, selectedDecor, isCrew, currentUser.id]);
+  }, [tasks, selectedDecor]);
 
   const selectedDone = selectedTasks.filter((t) => t.status === 'selesai').length;
   const selectedProgress = selectedTasks.length ? Math.round((selectedDone / selectedTasks.length) * 100) : 0;
 
-  const pendingTasks = isCrew
-    ? tasks.filter((t) => t.assigneeId === currentUser.id && t.status !== 'selesai').length
-    : tasks.filter((t) => t.status !== 'selesai').length;
+  const pendingTasks = tasks.filter((t) => t.status !== 'selesai').length;
 
   const recentActivities = useMemo(() => {
     const base = [...activities].sort((a, b) => (a.at < b.at ? 1 : -1));

@@ -45,7 +45,7 @@ const VALID_TABS: string[] = ['status', 'rekap', 'koreksi', 'audit'];
 
 export default function AbsensiPage() {
   const {
-    state, currentUser, decors, attendanceForDate, clockIn, clockOut,
+    state, currentUser, decors, selectedDecor, attendanceForDate, clockIn, clockOut,
     declareNoWork, deleteSession, requestCorrection, approveCorrection, rejectCorrection,
     corrections, audit,
   } = useOps();
@@ -84,16 +84,12 @@ export default function AbsensiPage() {
   const crewList = useMemo(() => state.users.filter((u) => u.active && u.role === 'crew'), [state.users]);
 
   // Semua decor aktif tersedia untuk absensi; pekerjaan ditentukan dari kehadiran.
+  // Crew: absensi terikat pada decor yang dipilih (pilih kegiatan dulu, baru absen).
   const myDecorTasks = useMemo(() => {
-    return decors
-      .filter((decor) => !['selesai', 'dibatalkan'].includes(decor.status))
-      .map((decor) => ({ decorId: decor.id, decorName: decor.name, total: 0, done: 0 }))
-      .sort((a, b) => {
-        const dA = decors.find((d) => d.id === a.decorId);
-        const dB = decors.find((d) => d.id === b.decorId);
-        return (dA?.date || '').localeCompare(dB?.date || '');
-      });
-  }, [decors]);
+    if (!selectedDecor) return [];
+    if (['selesai', 'dibatalkan'].includes(selectedDecor.status)) return [];
+    return [{ decorId: selectedDecor.id, decorName: selectedDecor.name, total: 0, done: 0 }];
+  }, [selectedDecor]);
 
   // Rekap pengelola menampilkan semua crew pada setiap decor aktif.
   const allDecorWithTasks = useMemo(() => {
@@ -252,7 +248,8 @@ export default function AbsensiPage() {
             ) : myDecorTasks.length === 0 ? (
               <div className="text-sm text-slate-500 rounded-xl bg-slate-50 p-4 text-center">
                 <ListChecks size={18} className="text-slate-300 mb-2 mx-auto" />
-                Tidak ada tugas yang ditugaskan untuk Anda.
+                Pilih <b>decor / kegiatan</b> terlebih dahulu untuk absen.
+                <div className="mt-1 text-[10px] text-slate-400">Gunakan menu Decor di bagian atas untuk memilih kegiatan.</div>
               </div>
             ) : (
               <div className="space-y-3">

@@ -206,12 +206,11 @@ export default function DecorPage() {
   const { currentUser, decors, addDecor, updateDecor, deleteDecor, selectDecor, tasks } = useOps();
   const isManager = currentUser.role === 'owner' || currentUser.role === 'admin';
 
-  // Crew hanya lihat decor yang punya tugas untuk mereka
+  // Crew melihat semua decor aktif
   const visibleDecors = useMemo(() => {
     if (isManager) return decors;
-    const myDecorIds = new Set(tasks.filter((t) => t.assigneeId === currentUser.id).map((t) => t.decorId));
-    return decors.filter((d) => myDecorIds.has(d.id));
-  }, [decors, tasks, currentUser.id, isManager]);
+    return decors.filter((d) => d.status !== 'selesai' && d.status !== 'dibatalkan');
+  }, [decors, isManager]);
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();

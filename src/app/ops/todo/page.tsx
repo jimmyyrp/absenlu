@@ -97,11 +97,6 @@ export default function TodoPage() {
     });
   };
 
-  const userName = (id?: string) => {
-    if (!id) return null;
-    return state.users.find((u) => u.id === id)?.name || id;
-  };
-
   return (
     <div>
       <PageHeader
@@ -168,7 +163,6 @@ export default function TodoPage() {
               <ol className="relative">
                 {filteredTasks.map((t: Task, idx) => {
                   const isDone = t.status === 'selesai';
-                  const assignee = userName(t.assigneeId);
                   return (
                     <li key={t.id} className="relative flex items-start gap-3 pb-5 last:pb-0">
                       {/* Connector line */}
@@ -192,18 +186,14 @@ export default function TodoPage() {
                         <div className="flex flex-wrap items-start justify-between gap-2">
                           <p className={cn("text-sm font-semibold leading-snug", isDone ? "text-slate-400" : "text-navy")}>{t.title}</p>
                           <div className="flex items-center gap-2">
-                            {(isManager || t.assigneeId === currentUser.id) ? (
-                              <Select value={t.status} onValueChange={(v) => updateTask(t.id, { status: v as TaskStatus })}>
-                                <SelectTrigger className="h-7 text-[11px] min-w-0">
-                                  <SelectValue>{TASK_STATUS_LABEL[t.status]}</SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {STATUSES.map((s) => <SelectItem key={s} value={s}>{TASK_STATUS_LABEL[s]}</SelectItem>)}
-                                </SelectContent>
-                              </Select>
-                            ) : (
-                              <StatusBadge color={TASK_STATUS_COLOR[t.status]} label={TASK_STATUS_LABEL[t.status]} />
-                            )}
+                            <Select value={t.status} onValueChange={(v) => updateTask(t.id, { status: v as TaskStatus })}>
+                              <SelectTrigger className="h-7 text-[11px] min-w-0">
+                                <SelectValue>{TASK_STATUS_LABEL[t.status]}</SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {STATUSES.map((s) => <SelectItem key={s} value={s}>{TASK_STATUS_LABEL[s]}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
                             {isManager && (
                               <button onClick={() => setConfirmDelete(t)} className="text-slate-300 hover:text-red-500 shrink-0" aria-label="hapus">
                                 <Trash2 size={16} />
@@ -211,11 +201,6 @@ export default function TodoPage() {
                             )}
                           </div>
                         </div>
-                        {assignee && (
-                          <p className="text-[10px] text-slate-400 mt-1">
-                            Penanggung jawab: <span className="font-semibold text-navy">{assignee}</span>
-                          </p>
-                        )}
                       </div>
                     </li>
                   );
