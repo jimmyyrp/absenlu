@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { OpsProvider, useOps } from '@/lib/ops/store';
 import { DECOR_STATUS_COLOR } from '@/lib/ops/types';
 import {
-  FREELANCER_NAV, MANAGER_NAV, OWNER_NAV, SECONDARY_NAV,
+  PRIMARY_NAV, FREELANCER_NAV, MANAGER_NAV, OWNER_NAV, SECONDARY_NAV,
   isActivePath, isAllowedRoute,
 } from './navigation';
 import {
