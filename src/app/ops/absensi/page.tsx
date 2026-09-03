@@ -15,7 +15,7 @@ import {
 import { monthlyWorkHours, formatDuration, minutesBetween } from '@/lib/ops/reports';
 import { opsDevice } from '@/lib/ops/auth';
 import { cn } from '@/lib/utils';
-import { PageHeader, SectionCard, StatusBadge, Pagination } from '../ops-ui';
+import { PageHeader, SectionCard, StatusBadge, Pagination, ConfirmDialog } from '../ops-ui';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,6 +66,7 @@ export default function AbsensiPage() {
   const month = date.slice(0, 7);
 
   const [showNoWork, setShowNoWork] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<(typeof dayRecords)[number] | null>(null);
   const [auditPage, setAuditPage] = useState(1);
   const AUDIT_PAGE_SIZE = 10;
 
@@ -396,7 +397,7 @@ export default function AbsensiPage() {
                                 <div className="flex items-center gap-2 shrink-0">
                                   <StatusBadge color={ATTENDANCE_STATUS_COLOR[status]} label={ATTENDANCE_STATUS_LABEL[status]} />
                                   {isOwner && userRecord && (
-                                    <button onClick={() => { deleteSession(userRecord.id); toast({ title: 'Session dihapus' }); }} className="text-slate-300 hover:text-red-500" aria-label="hapus"><X size={14} /></button>
+                                    <button onClick={() => setConfirmDelete(userRecord)} className="text-slate-300 hover:text-red-500" aria-label="hapus"><X size={14} /></button>
                                   )}
                                 </div>
                               </div>
@@ -599,6 +600,28 @@ export default function AbsensiPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onOpenChange={(open) => !open && setConfirmDelete(null)}
+        title="Hapus session absensi ini?"
+        description={
+          confirmDelete
+            ? <>
+                Session absensi <span className="font-semibold text-navy">{state.users.find((u) => u.id === confirmDelete.userId)?.name || confirmDelete.userId}</span>{' '}
+                pada tanggal {date} akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.
+              </>
+            : ''
+        }
+        confirmText="Ya, Hapus"
+        onConfirm={() => {
+          if (confirmDelete) {
+            deleteSession(confirmDelete.id);
+            setConfirmDelete(null);
+            toast({ title: 'Session dihapus' });
+          }
+        }}
+      />
     </div>
   );
 }

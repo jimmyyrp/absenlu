@@ -17,7 +17,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
-import { PageHeader, SectionCard, StatCard, EmptyState, Pagination } from '../ops-ui';
+import { PageHeader, SectionCard, StatCard, EmptyState, Pagination, ConfirmDialog } from '../ops-ui';
 import { useToast } from '@/hooks/use-toast';
 import { useSubmitLock } from '@/hooks/use-submit-lock';
 
@@ -116,6 +116,7 @@ export default function PengeluaranPage() {
   const [month, setMonth] = useState(state.monthlyReportMonth);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | undefined>(undefined);
+  const [confirmDelete, setConfirmDelete] = useState<Expense | null>(null);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 10;
@@ -292,7 +293,7 @@ export default function PengeluaranPage() {
                       <td className="py-2.5">
                         <div className="flex gap-1 justify-end">
                           <button onClick={() => openEdit(e)} className="text-slate-300 hover:text-navy" aria-label="edit"><Pencil size={14} /></button>
-                          <button onClick={() => { deleteExpense(e.id); toast({ title: 'Pengeluaran dihapus' }); }} className="text-slate-300 hover:text-red-500" aria-label="hapus"><Trash2 size={14} /></button>
+                          <button onClick={() => setConfirmDelete(e)} className="text-slate-300 hover:text-red-500" aria-label="hapus"><Trash2 size={14} /></button>
                         </div>
                       </td>
                     </tr>
@@ -321,6 +322,29 @@ export default function PengeluaranPage() {
           <ExpenseForm initial={editing} onClose={() => setOpen(false)} decorOptions={decorOptions} />
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onOpenChange={(open) => !open && setConfirmDelete(null)}
+        title="Hapus pengeluaran ini?"
+        description={
+          confirmDelete
+            ? <>
+                Pengeluaran <span className="font-semibold text-navy">{confirmDelete.description}</span> sebesar{' '}
+                <span className="font-semibold text-navy">{formatIDR(confirmDelete.amount)}</span> akan dihapus permanen.
+                Tindakan ini tidak dapat dibatalkan.
+              </>
+            : ''
+        }
+        confirmText="Ya, Hapus"
+        onConfirm={() => {
+          if (confirmDelete) {
+            deleteExpense(confirmDelete.id);
+            setConfirmDelete(null);
+            toast({ title: 'Pengeluaran dihapus' });
+          }
+        }}
+      />
     </div>
   );
 }

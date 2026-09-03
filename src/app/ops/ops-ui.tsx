@@ -4,6 +4,10 @@ import React from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export function PageHeader({
   title,
@@ -166,5 +170,48 @@ export function Pagination({
         Berikutnya <ChevronRight size={13} />
       </button>
     </div>
+  );
+}
+
+export function ConfirmDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  confirmText = 'Hapus',
+  confirmClass = 'bg-red-600 hover:bg-red-700 text-white',
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description: React.ReactNode;
+  confirmText?: string;
+  confirmClass?: string;
+  onConfirm: () => void;
+}) {
+  return (
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
+      <AlertDialogContent className="rounded-2xl">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-navy">{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel
+            className="text-[10px] font-black uppercase tracking-widest"
+            onClick={() => onOpenChange(false)}
+          >
+            Batal
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={onConfirm}
+            className={cn("text-[10px] font-black uppercase tracking-widest", confirmClass)}
+          >
+            {confirmText}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

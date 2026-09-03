@@ -23,7 +23,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { PageHeader, StatusBadge, EmptyState, Pagination } from '../ops-ui';
+import { PageHeader, StatusBadge, EmptyState, Pagination, ConfirmDialog } from '../ops-ui';
 import { useToast } from '@/hooks/use-toast';
 import { useSubmitLock } from '@/hooks/use-submit-lock';
 
@@ -218,6 +218,7 @@ export default function DecorPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<DecorProject | undefined>(undefined);
+  const [confirmDelete, setConfirmDelete] = useState<DecorProject | null>(null);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 9;
@@ -278,10 +279,7 @@ export default function DecorPage() {
   };
 
   const handleDelete = (d: DecorProject) => {
-    if (confirm(`Hapus decor "${d.name}" beserta tugasnya?`)) {
-      deleteDecor(d.id);
-      toast({ title: 'Decor dihapus' });
-    }
+    setConfirmDelete(d);
   };
 
   return (
@@ -384,6 +382,29 @@ export default function DecorPage() {
           <DecorForm initial={editing} onSubmit={submit} onClose={() => setModalOpen(false)} />
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onOpenChange={(open) => !open && setConfirmDelete(null)}
+        title="Hapus decor ini?"
+        description={
+          confirmDelete
+            ? <>
+                Decor <span className="font-semibold text-navy">{confirmDelete.name}</span> beserta seluruh{' '}
+                <span className="font-semibold text-navy">tugas & data terkait</span> akan dihapus permanen.
+                Tindakan ini tidak dapat dibatalkan.
+              </>
+            : ''
+        }
+        confirmText="Ya, Hapus"
+        onConfirm={() => {
+          if (confirmDelete) {
+            deleteDecor(confirmDelete.id);
+            setConfirmDelete(null);
+            toast({ title: 'Decor dihapus' });
+          }
+        }}
+      />
     </div>
   );
 }

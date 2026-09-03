@@ -58,6 +58,7 @@ export default function TodoPage() {
   const [newAssignee, setNewAssignee] = useState<string>('');
   const [newStatus, setNewStatus] = useState<TaskStatus>('belum');
   const [confirmToggle, setConfirmToggle] = useState<Task | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Task | null>(null);
   const { locked, run } = useSubmitLock();
 
   const decorTasks = useMemo(() => {
@@ -212,7 +213,7 @@ export default function TodoPage() {
                         </div>
                       </div>
                       {isManager && (
-                        <button onClick={() => { deleteTask(t.id); }} className="mt-0.5 text-slate-300 hover:text-red-500 shrink-0" aria-label="hapus">
+                        <button onClick={() => setConfirmDelete(t)} className="mt-0.5 text-slate-300 hover:text-red-500 shrink-0" aria-label="hapus">
                           <Trash2 size={16} />
                         </button>
                       )}
@@ -310,6 +311,37 @@ export default function TodoPage() {
               onClick={() => { if (confirmToggle) { toggleTask(confirmToggle.id); setConfirmToggle(null); } }}
             >
               Ya, Lanjutkan
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm delete dialog */}
+      <AlertDialog open={!!confirmDelete} onOpenChange={(open) => !open && setConfirmDelete(null)}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-navy">Hapus tugas ini?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tugas <span className="font-semibold text-navy">"{confirmDelete?.title}"</span> akan dihapus secara permanen dari decor <span className="font-semibold text-navy">{selectedDecor?.name}</span>. Tindakan ini tidak dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => setConfirmDelete(null)}
+              className="text-[10px] font-black uppercase tracking-widest"
+            >
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-widest"
+              onClick={() => {
+                if (confirmDelete) {
+                  deleteTask(confirmDelete.id);
+                  setConfirmDelete(null);
+                }
+              }}
+            >
+              Ya, Hapus
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

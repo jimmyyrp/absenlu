@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { PageHeader, SectionCard, StatusBadge, EmptyState, formatDateTime, Pagination } from '../ops-ui';
+import { PageHeader, SectionCard, StatusBadge, EmptyState, formatDateTime, Pagination, ConfirmDialog } from '../ops-ui';
 import { useToast } from '@/hooks/use-toast';
 import { useSubmitLock } from '@/hooks/use-submit-lock';
 import { OpsTabs } from '@/components/OpsTabs';
@@ -57,6 +57,7 @@ export default function KegiatanPage() {
   const [taskId, setTaskId] = useState('');
   const [photo, setPhoto] = useState<string>('');
   const [page, setPage] = useState(1);
+  const [confirmDelete, setConfirmDelete] = useState<(typeof activities)[number] | null>(null);
   const { locked, run } = useSubmitLock();
   const PAGE_SIZE = 8;
 
@@ -280,7 +281,7 @@ export default function KegiatanPage() {
                           <span className="px-2 py-0.5 rounded-full bg-gold/15 text-gold text-[9px] font-bold uppercase tracking-widest">{a.activityType}</span>
                           <StatusBadge color={st?.color || 'bg-slate-400'} label={st?.label || a.status} />
                           {(isManager || a.userId === currentUser.id) && (
-                            <button onClick={() => { deleteActivity(a.id); }} className="text-slate-300 hover:text-red-500" aria-label="hapus"><Trash2 size={14} /></button>
+                            <button onClick={() => setConfirmDelete(a)} className="text-slate-300 hover:text-red-500" aria-label="hapus"><Trash2 size={14} /></button>
                           )}
                         </div>
                       </div>
@@ -296,6 +297,28 @@ export default function KegiatanPage() {
           )}
         </SectionCard>
       )}
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onOpenChange={(open) => !open && setConfirmDelete(null)}
+        title="Hapus kegiatan ini?"
+        description={
+          confirmDelete
+            ? <>
+                Kegiatan <span className="font-semibold text-navy">"{confirmDelete.description}"</span> oleh{' '}
+                <span className="font-semibold text-navy">{state.users.find((u) => u.id === confirmDelete.userId)?.name || 'user'}</span>{' '}
+                akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.
+              </>
+            : ''
+        }
+        confirmText="Ya, Hapus"
+        onConfirm={() => {
+          if (confirmDelete) {
+            deleteActivity(confirmDelete.id);
+            setConfirmDelete(null);
+          }
+        }}
+      />
     </div>
   );
 }

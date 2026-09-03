@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PageHeader, SectionCard, EmptyState, formatDateTime } from '../ops-ui';
+import { PageHeader, SectionCard, EmptyState, formatDateTime, ConfirmDialog } from '../ops-ui';
 import { useToast } from '@/hooks/use-toast';
 import { useSubmitLock } from '@/hooks/use-submit-lock';
 
@@ -17,6 +17,7 @@ export default function DokumentasiPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState('');
   const [caption, setCaption] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState<(typeof decorPhotos)[number] | null>(null);
   const { locked, run } = useSubmitLock();
 
   const decorPhotos = useMemo(
@@ -92,7 +93,7 @@ export default function DokumentasiPage() {
                   <div className="h-40 w-full bg-slate-100 flex items-center justify-center text-slate-300"><Image size={24} /></div>
                 )}
                 <button
-                  onClick={() => { deletePhoto(p.id); toast({ title: 'Foto dihapus' }); }}
+                  onClick={() => setConfirmDelete(p)}
                   className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
                   aria-label="hapus foto"
                 >
@@ -110,6 +111,28 @@ export default function DokumentasiPage() {
           })}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onOpenChange={(open) => !open && setConfirmDelete(null)}
+        title="Hapus foto ini?"
+        description={
+          confirmDelete
+            ? <>
+                Foto <span className="font-semibold text-navy">{confirmDelete.caption || '(tanpa keterangan)'}</span>{' '}
+                akan dihapus permanen dari dokumentasi. Tindakan ini tidak dapat dibatalkan.
+              </>
+            : ''
+        }
+        confirmText="Ya, Hapus"
+        onConfirm={() => {
+          if (confirmDelete) {
+            deletePhoto(confirmDelete.id);
+            setConfirmDelete(null);
+            toast({ title: 'Foto dihapus' });
+          }
+        }}
+      />
     </div>
   );
 }
