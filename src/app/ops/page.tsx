@@ -12,7 +12,7 @@ import {
 import {
   monthlyFinancial, monthlyWorkHours, formatIDR, formatIDRCompact, formatDuration,
 } from '@/lib/ops/reports';
-import { SectionCard, StatusBadge, ProgressBar, formatDateTime } from './ops-ui';
+import { SectionCard, StatusBadge, formatDateTime } from './ops-ui';
 import { cn } from '@/lib/utils';
 
 /* ─── Quick Card ──────────────────────────────────────────────────────────── */
@@ -42,7 +42,7 @@ function QuickCard({
 
 /* ─── Dashboard ───────────────────────────────────────────────────────────── */
 export default function DashboardPage() {
-  const { state, currentUser, decors, activeDecors, selectedDecor, tasks, activities, attendance, expenses } = useOps();
+  const { state, currentUser, decors, activeDecors, selectedDecor, tasks, activities, attendance, expenses, audit } = useOps();
   const isCrew = currentUser.role === 'crew';
   const isOwner = currentUser.role === 'owner';
   const isManager = isOwner || currentUser.role === 'admin';
@@ -81,16 +81,34 @@ export default function DashboardPage() {
     return base.sort((a, b) => a.order - b.order);
   }, [tasks, selectedDecor]);
 
-  const selectedDone = selectedTasks.filter((t) => t.status === 'selesai').length;
-  const selectedProgress = selectedTasks.length ? Math.round((selectedDone / selectedTasks.length) * 100) : 0;
-
-  const pendingTasks = tasks.filter((t) => t.status !== 'selesai').length;
-
+  // Aktivitas terbaru: khusus pencatatan absensi (dari audit log)
   const recentActivities = useMemo(() => {
-    const base = [...activities].sort((a, b) => (a.at < b.at ? 1 : -1));
+    const base = audit
+      .filter((a) => a.action.startsWith('absensi.'))
+      .sort((a, b) => (a.at < b.at ? 1 : -1));
     const filtered = isCrew ? base.filter((a) => a.userId === currentUser.id) : base;
     return filtered.slice(0, 5);
-  }, [activities, isCrew, currentUser.id]);
+  }, [audit, isCrew, currentUser.id]);
+
+  const auditLabel = (a: { action: string }) => {
+    switch (a.action) {
+      case 'absensi.masuk': return 'Absen Masuk';
+      case 'absensi.pulang': return 'Absen Pulang';
+      case 'absensi.tidak-bekerja': return 'Tidak Bekerja';
+      case 'absensi.hapus': return 'Session Dihapus';
+      default: return a.action;
+    }
+  };
+
+  const auditColor = (a: { action: string }) => {
+    switch (a.action) {
+      case 'absensi.masuk': return 'bg-emerald-100 text-emerald-700';
+      case 'absensi.pulang': return 'bg-sky-100 text-sky-700';
+      case 'absensi.tidak-bekerja': return 'bg-slate-100 text-slate-600';
+      case 'absensi.hapus': return 'bg-red-100 text-red-600';
+      default: return 'bg-slate-100 text-slate-600';
+    }
+  };
 
   return (
     <div className="space-y-5">
@@ -124,7 +142,7 @@ export default function DashboardPage() {
           href="/ops/todo"
           icon={<ListChecks size={26} />}
           label="Tugas"
-          sub={`${pendingTasks} pending`}
+          sub={`${tasks.length} langkah`}
           color="bg-gold"
         />
       </div>
@@ -168,9 +186,8 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="text-right shrink-0">
-              <p className="text-2xl font-headline font-bold text-navy">{selectedProgress}<span className="text-sm text-slate-400">%</span></p>
-              <p className="text-[9px] text-slate-400">{selectedDone}/{selectedTasks.length} tugas</p>
-              <ProgressBar value={selectedProgress} className="w-20 mt-1" />
+              <p className="text-2xl font-headline font-bold text-navy">{selectedTasks.length}</p>
+              <p className="text-[9px] text-slate-400">langkah kerja</p>
             </div>
           </div>
         </SectionCard>
@@ -218,20 +235,19 @@ export default function DashboardPage() {
           <ul className="divide-y divide-slate-50">
             {recentActivities.map((a) => (
               <li key={a.id} className="py-2.5 flex items-start gap-3">
-                {!isCrew && (
-                  <span className="h-7 w-7 rounded-full bg-gold/15 text-gold text-[9px] font-bold flex items-center justify-center shrink-0">
-                    {userFirst(state, a.userId)}
-                  </span>
-                )}
+                <span className="h-7 w-7 rounded-full bg-gold/15 text-gold text-[9px] font-bold flex items-center justify-center shrink-0">
+                  {userFirst(state, a.userId)}
+                </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[11px] text-slate-600 truncate">
-                    {isCrew ? (
-                      <span className="font-bold text-navy">{a.activityType}</span>
-                    ) : (
-                      <><span className="font-bold text-navy">{state.users.find((u) => u.id === a.userId)?.name}</span>{' '}&middot; {a.activityType}</>
+                  <p className="text-[11px] flex items-center gap-2">
+                    {!isCrew && (
+                      <span className="font-bold text-navy shrink-0">{state.users.find((u) => u.id === a.userId)?.name}</span>
                     )}
+                    <span className={`px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider ${auditColor(a)}`}>
+                      {auditLabel(a)}
+                    </span>
                   </p>
-                  <p className="text-[10px] text-slate-500 truncate">{a.description}</p>
+                  <p className="text-[10px] text-slate-500 truncate">{a.detail || auditLabel(a)}</p>
                   <p className="text-[9px] text-slate-400 mt-0.5">{formatDateTime(a.at)}</p>
                 </div>
               </li>

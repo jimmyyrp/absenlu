@@ -3,7 +3,7 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import {
   Plus, Pencil, Trash2, CalendarRange, MapPin, Search,
-  LayoutGrid, FileEdit, Clock, CheckCircle2, Play, CheckCircle, XCircle,
+  LayoutGrid, FileEdit, Clock, CheckCircle2, Play, CheckCircle, XCircle, ListChecks,
 } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useOps } from '@/lib/ops/store';
@@ -139,18 +139,15 @@ function DecorForm({
 
 /* ─── Decor Card ───────────────────────────────────────────────────────── */
 function DecorCard({
-  d, taskCount, doneCount, onSelect, onEdit, onDelete, showRevenue = true,
+  d, taskCount, onSelect, onEdit, onDelete, showRevenue = true,
 }: {
   d: DecorProject;
   taskCount: number;
-  doneCount: number;
   onSelect: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
   showRevenue?: boolean;
 }) {
-  const pct = taskCount ? Math.round((doneCount / taskCount) * 100) : 0;
-
   return (
     <div className="bg-white rounded-2xl border border-slate-100 p-5 shadow-sm flex flex-col hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between gap-2">
@@ -268,7 +265,6 @@ export default function DecorPage() {
   const shown = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const taskCount = useCallback((decorId: string) => tasks.filter((t) => t.decorId === decorId).length, [tasks]);
-  const doneCount = useCallback((decorId: string) => tasks.filter((t) => t.decorId === decorId && t.status === 'selesai').length, [tasks]);
 
   /* ── CRUD helpers ────────────────────────────────────────────────────── */
   const openCreate = () => { setEditing(undefined); setModalOpen(true); };
@@ -361,7 +357,6 @@ export default function DecorPage() {
               key={d.id}
               d={d}
               taskCount={taskCount(d.id)}
-              doneCount={doneCount(d.id)}
               onSelect={() => { selectDecor(d.id); toast({ title: `Decor "${d.name}" dipilih` }); }}
                 onEdit={isManager ? () => openEdit(d) : undefined}
                 onDelete={isManager ? () => handleDelete(d) : undefined}
