@@ -153,7 +153,7 @@ export default function LaporanPage() {
                 {totalDuration.h} <span className="text-base text-slate-400">jam {totalDuration.m} menit</span>
               </p>
             </div>
-            <div className="overflow-x-auto no-scrollbar">
+            <div className="hidden sm:block overflow-x-auto no-scrollbar">
               <table className="w-full text-left">
                 <thead>
                   <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
@@ -173,6 +173,17 @@ export default function LaporanPage() {
                 </tbody>
               </table>
             </div>
+            <div className="sm:hidden space-y-2">
+              {crewAct.map(({ u, hours, acts }) => (
+                <div key={u.id} className="flex items-center justify-between bg-white rounded-xl border border-slate-100 p-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-navy">{u.name}</p>
+                    <p className="text-[10px] text-slate-400">{acts} aktivitas</p>
+                  </div>
+                  <p className="text-sm font-bold text-navy">{formatDuration(hours).label}</p>
+                </div>
+              ))}
+            </div>
           </SectionCard>
         </div>
       </div>
@@ -182,7 +193,7 @@ export default function LaporanPage() {
         {perDecor.length === 0 ? (
           <p className="text-xs text-slate-400 py-6 text-center">Tidak ada decor pada bulan ini.</p>
         ) : (
-          <div className="overflow-x-auto no-scrollbar">
+          <div className="hidden sm:block overflow-x-auto no-scrollbar">
             <table className="w-full text-left">
               <thead>
                 <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
@@ -210,6 +221,37 @@ export default function LaporanPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="sm:hidden space-y-2.5">
+            {perDecor.map(({ decor, fin }) => (
+              <div key={decor.id} className="bg-white rounded-xl border border-slate-100 p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-navy leading-snug">{decor.name}</p>
+                    <p className="text-[10px] text-slate-400">{decor.category} · {decor.client}</p>
+                  </div>
+                  <StatusBadge color={DECOR_STATUS_COLOR[decor.status]} label={DECOR_STATUS_LABEL[decor.status]} />
+                </div>
+                <div className="mt-2.5 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400">Omzet</span>
+                    <span className="font-semibold text-navy">{formatIDR(fin.revenue)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400">Pengeluaran</span>
+                    <span className="font-semibold text-navy">{formatIDR(fin.expenses)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] border-t border-slate-100 pt-1.5">
+                    <span className="text-slate-400">Profit</span>
+                    <span className={cn("font-bold", fin.profit >= 0 ? "text-emerald-600" : "text-red-500")}>{formatIDR(fin.profit)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-400">Margin</span>
+                    <span className="font-bold text-navy">{fin.margin}%</span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </SectionCard>

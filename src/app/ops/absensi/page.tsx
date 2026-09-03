@@ -419,7 +419,7 @@ export default function AbsensiPage() {
           )}
 
           <SectionCard title={isOwner ? "Rekap Jam Kerja Tim" : "Rekap Jam Kerja Saya"}>
-            <div className="overflow-x-auto no-scrollbar">
+            <div className="hidden sm:block overflow-x-auto no-scrollbar">
               <table className="w-full text-left">
                 <thead>
                   <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
@@ -437,6 +437,14 @@ export default function AbsensiPage() {
                 </tbody>
               </table>
             </div>
+            <div className="sm:hidden space-y-2">
+              {hourRows.map((u) => ({ u, minutes: hourMap.get(u.id) || 0 })).filter((x) => x.minutes > 0).sort((a, b) => b.minutes - a.minutes).map(({ u, minutes }) => (
+                <div key={u.id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-white px-3 py-2.5">
+                  <span className="text-sm font-semibold text-navy">{u.name}</span>
+                  <span className="text-sm font-bold text-slate-600">{formatDuration(minutes).label}</span>
+                </div>
+              ))}
+            </div>
           </SectionCard>
         </div>
       </div>
@@ -445,7 +453,7 @@ export default function AbsensiPage() {
       {/* ═══ TAB: REKAP ═══ */}
       {sectionTab === 'rekap' && (
         <SectionCard title={isOwner ? "Rekap Jam Kerja Tim" : "Rekap Jam Kerja Saya"}>
-          <div className="overflow-x-auto no-scrollbar">
+          <div className="hidden sm:block overflow-x-auto no-scrollbar">
             <table className="w-full text-left">
               <thead>
                 <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
@@ -462,6 +470,14 @@ export default function AbsensiPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+          <div className="sm:hidden space-y-2">
+            {hourRows.map((u) => ({ u, minutes: hourMap.get(u.id) || 0 })).filter((x) => x.minutes > 0).sort((a, b) => b.minutes - a.minutes).map(({ u, minutes }) => (
+              <div key={u.id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-white px-3 py-2.5">
+                <span className="text-sm font-semibold text-navy">{u.name}</span>
+                <span className="text-sm font-bold text-slate-600">{formatDuration(minutes).label}</span>
+              </div>
+            ))}
           </div>
         </SectionCard>
       )}

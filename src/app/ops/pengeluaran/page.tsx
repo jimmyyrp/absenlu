@@ -266,48 +266,82 @@ export default function PengeluaranPage() {
           {filtered.length === 0 ? (
             <EmptyState icon={<Wallet size={20} />} title="Tidak ada transaksi" sub="Tambahkan pengeluaran bulan ini." />
           ) : (
-            <div className="overflow-x-auto no-scrollbar">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
-                    <th className="py-2 pr-3">Tanggal</th>
-                    <th className="py-2 pr-3">Keterangan</th>
-                    <th className="py-2 pr-3">Kategori</th>
-                    <th className="py-2 pr-3">Decor</th>
-                    <th className="py-2 pr-3 text-right">Nominal</th>
-                    <th className="py-2"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {shown.map((e) => (
-                    <tr key={e.id} className="border-b border-slate-50">
-                      <td className="py-2.5 pr-3 text-[11px] text-slate-500 whitespace-nowrap">
-                        {new Date(e.date + 'T00:00:00').toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
-                      </td>
-                      <td className="py-2.5 pr-3 text-sm font-medium text-navy">{e.description}</td>
-                      <td className="py-2.5 pr-3">
-                        <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[9px] font-bold uppercase tracking-widest">{e.category}</span>
-                      </td>
-                      <td className="py-2.5 pr-3 text-[11px] text-slate-500">{decorName(e.decorId) || '—'}</td>
-                      <td className="py-2.5 pr-3 text-right text-sm font-bold text-navy whitespace-nowrap">{formatIDR(e.amount)}</td>
-                      <td className="py-2.5">
-                        <div className="flex gap-1 justify-end">
-                          <button onClick={() => openEdit(e)} className="text-slate-300 hover:text-navy" aria-label="edit"><Pencil size={14} /></button>
-                          <button onClick={() => setConfirmDelete(e)} className="text-slate-300 hover:text-red-500" aria-label="hapus"><Trash2 size={14} /></button>
-                        </div>
-                      </td>
+            <>
+              {/* Desktop: tabel */}
+              <div className="hidden sm:block overflow-x-auto no-scrollbar">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
+                      <th className="py-2 pr-3">Tanggal</th>
+                      <th className="py-2 pr-3">Keterangan</th>
+                      <th className="py-2 pr-3">Kategori</th>
+                      <th className="py-2 pr-3">Decor</th>
+                      <th className="py-2 pr-3 text-right">Nominal</th>
+                      <th className="py-2"></th>
                     </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colSpan={4} className="py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Total</td>
-                    <td className="py-3 text-right font-headline font-bold text-navy">{formatIDR(total)}</td>
-                    <td></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {shown.map((e) => (
+                      <tr key={e.id} className="border-b border-slate-50">
+                        <td className="py-2.5 pr-3 text-[11px] text-slate-500 whitespace-nowrap">
+                          {new Date(e.date + 'T00:00:00').toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}
+                        </td>
+                        <td className="py-2.5 pr-3 text-sm font-medium text-navy">{e.description}</td>
+                        <td className="py-2.5 pr-3">
+                          <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[9px] font-bold uppercase tracking-widest">{e.category}</span>
+                        </td>
+                        <td className="py-2.5 pr-3 text-[11px] text-slate-500">{decorName(e.decorId) || '—'}</td>
+                        <td className="py-2.5 pr-3 text-right text-sm font-bold text-navy whitespace-nowrap">{formatIDR(e.amount)}</td>
+                        <td className="py-2.5">
+                          <div className="flex gap-1 justify-end">
+                            <button onClick={() => openEdit(e)} className="text-slate-300 hover:text-navy" aria-label="edit"><Pencil size={14} /></button>
+                            <button onClick={() => setConfirmDelete(e)} className="text-slate-300 hover:text-red-500" aria-label="hapus"><Trash2 size={14} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={4} className="py-3 text-[10px] font-black uppercase tracking-widest text-slate-400">Total</td>
+                      <td className="py-3 text-right font-headline font-bold text-navy">{formatIDR(total)}</td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              {/* Mobile: daftar kartu sederhana */}
+              <div className="sm:hidden space-y-2.5">
+                {shown.map((e) => (
+                  <div key={e.id} className="bg-white rounded-xl border border-slate-100 p-3 flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-navy leading-snug">{e.description}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        {new Date(e.date + 'T00:00:00').toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                        <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[9px] font-bold uppercase tracking-widest">{e.category}</span>
+                        {decorName(e.decorId) && (
+                          <span className="px-2 py-0.5 rounded-full bg-gold/10 text-gold text-[9px] font-bold uppercase tracking-widest">{decorName(e.decorId)}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-sm font-bold text-navy whitespace-nowrap">{formatIDR(e.amount)}</p>
+                      <div className="flex gap-1 justify-end mt-1.5">
+                        <button onClick={() => openEdit(e)} className="text-slate-300 hover:text-navy" aria-label="edit"><Pencil size={14} /></button>
+                        <button onClick={() => setConfirmDelete(e)} className="text-slate-300 hover:text-red-500" aria-label="hapus"><Trash2 size={14} /></button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between bg-navy text-white rounded-xl px-4 py-3">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-white/60">Total</span>
+                  <span className="font-headline font-bold">{formatIDR(total)}</span>
+                </div>
+              </div>
+            </>
           )}
           <Pagination page={page} totalPages={pageCount} onPage={setPage} />
         </SectionCard>
