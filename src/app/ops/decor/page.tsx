@@ -175,15 +175,10 @@ function DecorCard({
       </div>
 
       {taskCount > 0 && (
-        <div className="mt-3">
-          <div className="flex justify-between text-[10px] font-bold text-slate-400 mb-1">
-            <span>{doneCount}/{taskCount} tugas</span>
-            <span>{pct}%</span>
-          </div>
-          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-navy to-gold" style={{ width: `${pct}%` }} />
-          </div>
-        </div>
+        <p className="text-[11px] text-slate-500 font-semibold mt-2 flex items-center gap-1">
+          <ListChecks size={11} className="text-slate-400" />
+          {taskCount} langkah kerja
+        </p>
       )}
 
       {showRevenue && d.revenue ? (
