@@ -26,6 +26,11 @@ export default function TodoPage() {
   const isManager = currentUser.role === 'owner' || currentUser.role === 'admin';
   const scheduleLocked = decorScheduleLocked(selectedDecor);
   const scheduleLockReason = decorScheduleLockReason(selectedDecor);
+  // Owner selalu boleh mengelola alur tugas; admin terbatasi oleh jadwal kerja;
+  // crew hanya bisa melihat.
+  const isOwner = currentUser.role === 'owner';
+  const canManageTasks = isOwner || (isManager && !scheduleLocked);
+  const showScheduleLock = !isOwner && scheduleLocked;
 
   const [addOpen, setAddOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -73,7 +78,7 @@ export default function TodoPage() {
                 <span className="hidden sm:flex items-center gap-2 text-[10px] font-bold text-slate-400">
                   {decorTasks.length} langkah
                 </span>
-                {isManager && !scheduleLocked && (
+                {canManageTasks && (
                   <Button
                     type="button"
                     size="sm"
@@ -86,7 +91,7 @@ export default function TodoPage() {
               </div>
             }
           >
-            {scheduleLocked && (
+            {showScheduleLock && (
               <div className="rounded-xl border border-red-200 bg-red-50 p-3 mb-4 flex items-start gap-2">
                 <AlertTriangle size={16} className="text-red-500 mt-0.5 shrink-0" />
                 <div>
@@ -111,7 +116,7 @@ export default function TodoPage() {
                     <div className="flex-1 min-w-0 pt-1">
                       <div className="flex flex-wrap items-start justify-between gap-2">
                         <p className="text-sm font-semibold leading-snug text-navy">{t.title}</p>
-                        {isManager && !scheduleLocked && (
+                        {canManageTasks && (
                           <button
                             onClick={() => setConfirmDelete(t)}
                             className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 shrink-0"
