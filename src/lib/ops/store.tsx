@@ -227,21 +227,29 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
       if (!isOwner) return;
       const name = (u.name || '').trim().slice(0, 50);
       const username = (u.username || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30);
+      const phone = sanitizePhone(u.phone);
       if (!name || !username) return;
       patchState((p) => {
         // Guard: username sudah ada
         if (p.users.some((ex) => ex.username.toLowerCase() === username)) return p;
         return {
           ...p,
-          users: [...p.users, { ...u, id: uid(), name, username, createdAt: new Date().toISOString() }],
+          users: [...p.users, { ...u, id: uid(), name, username, phone, createdAt: new Date().toISOString() }],
         };
       });
     },
     updateUser: (id, patch) => {
       if (!isOwner) return;
+      const cleanPatch: Partial<OpsUser> = { ...patch };
+      if ('username' in cleanPatch) {
+        cleanPatch.username = (patch.username || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 30);
+      }
+      if ('phone' in cleanPatch) {
+        cleanPatch.phone = sanitizePhone(patch.phone);
+      }
       patchState((p) => ({
         ...p,
-        users: p.users.map((u) => (u.id === id ? { ...u, ...patch } : u)),
+        users: p.users.map((u) => (u.id === id ? { ...u, ...cleanPatch } : u)),
       }));
     },
     deleteUser: (id) => {
@@ -552,4 +560,25 @@ export function useOps() {
 export function userFirst(state: OpsState, id?: string) {
   const u = state.users.find((x) => x.id === id);
   return u ? u.name.charAt(0) : '?';
+}
+
+// Sanitasi nomor HP ke format Indonesia: hanya digit, dimulai dengan 08 atau 628.
+// 08...   -> 08xxxxxxxx
+// 628...  -> 628xxxxxxxx
+// 8...    -> 08xxxxxxxx (normalisasi)
+// lainnya -> kosong
+export function sanitizePhone(raw?: string): string | undefined {
+  if (!raw) return undefined;
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return undefined;
+  let normalized = digits;
+  if (normalized.startsWith('0')) {
+    normalized = '0' + normalized.slice(1);
+  } else if (normalized.startsWith('8')) {
+    normalized = '0' + normalized;
+  }
+  if (normalized.startsWith('08') || normalized.startsWith('628')) {
+    return normalized.slice(0, 15);
+  }
+  return undefined;
 }
