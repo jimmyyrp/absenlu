@@ -65,23 +65,30 @@ function srvHost() {
   }
 }
 
+/** Tambahkan `authSource=admin` ke URI bila belum ada (kebiasaan Atlas). */
+function withForceAuthSource(uri: string): string {
+  if (/[?&]authSource=/.test(uri)) return uri;
+  const sep = uri.includes('?') ? '&' : '?';
+  return `${uri}${sep}authSource=admin`;
+}
+
 /** Ubah URI `mongodb+srv://` menjadi `mongodb://` berisi seedlist host langsung. */
 async function toDirectUri(): Promise<string> {
-  if (!MONGODB_URI.startsWith('mongodb+srv://')) return MONGODB_URI;
+  if (!MONGODB_URI.startsWith('mongodb+srv://')) return withForceAuthSource(MONGODB_URI);
 
   const schemeLen = 'mongodb+srv://'.length;
   const at = MONGODB_URI.indexOf('@');
   const slash = MONGODB_URI.indexOf('/', schemeLen);
 
   const host = srvHost();
-  if (!host) return MONGODB_URI;
+  if (!host) return withForceAuthSource(MONGODB_URI);
   const seedlist = await resolveSeedlist(host);
-  if (!seedlist.length) return MONGODB_URI;
+  if (!seedlist.length) return withForceAuthSource(MONGODB_URI);
 
   const auth = at !== -1 ? MONGODB_URI.slice(schemeLen, at) : '';
   const rest = slash !== -1 ? MONGODB_URI.slice(slash) : '';
   const sep = rest.includes('?') ? '&' : '?';
-  return `mongodb://${auth}@${seedlist.join(',')}${rest}${sep}tls=true`;
+  return `mongodb://${auth}@${seedlist.join(',')}${rest}${sep}tls=true&authSource=admin`;
 }
 
 export function hasMongoConfig(): boolean {
