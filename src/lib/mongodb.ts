@@ -25,26 +25,34 @@ const PUBLIC_DNS = ['8.8.8.8', '8.8.4.4', '1.1.1.1'];
 /**
  * Beberapa jaringan (ISP / proxy lokal) menolak query DNS SRV yang dipakai
  * MongoDB Atlas (mongodb+srv://...). Bila resolver bawaan gagal, beralih ke
- * DNS publik agar koneksi tetap bisa dibuat. Di Vercel/layanan cloud,
- * resolver bawaan berfungsi normal sehingga fallback ini tidak terpakai.
+ * DNS publik, lalu OLAH seedlist SRV menjadi URI `mongodb://` langsung berisi
+ * host:port (TLS aktif) sehingga driver tidak lagi bergantung pada SRV.
+ * Di Vercel/layanan cloud, resolver bawaan berfungsi normal sehingga
+ * fallback ini tidak terpakai.
  */
-async function ensureSrvResolution(host: string) {
-  try {
-    await dns.promises.resolveSrv(`_mongodb._tcp.${host}`);
-    return;
-  } catch {
-    // lanjut ke fallback
-  }
-  try {
-    const prev = dns.getServers();
+async function resolveSeedlist(host: string): Promise<string[]> {
+  const tryResolve = async (): Promise<string[] | null> => {
     try {
-      dns.setServers(PUBLIC_DNS);
-      await dns.promises.resolveSrv(`_mongodb._tcp.${host}`);
+      const recs = await dns.promises.resolveSrv(`_mongodb._tcp.${host}`);
+      if (!recs.length) return null;
+      return recs.map((r) => `${r.name}:${r.port}`);
     } catch {
-      dns.setServers(prev);
+      return null;
     }
+  };
+
+  const viaDefault = await tryResolve();
+  if (viaDefault) return viaDefault;
+
+  const prev = dns.getServers();
+  try {
+    dns.setServers(PUBLIC_DNS);
+    const viaPublic = await tryResolve();
+    return viaPublic ?? [];
   } catch {
-    // biarkan mongoose mencoba sendiri
+    return [];
+  } finally {
+    dns.setServers(prev);
   }
 }
 
@@ -55,6 +63,25 @@ function srvHost() {
     const match = MONGODB_URI.match(/^mongodb\+srv:\/\/(?:[^@/?#]+@)?([^/?#]+)/);
     return match ? match[1] : null;
   }
+}
+
+/** Ubah URI `mongodb+srv://` menjadi `mongodb://` berisi seedlist host langsung. */
+async function toDirectUri(): Promise<string> {
+  if (!MONGODB_URI.startsWith('mongodb+srv://')) return MONGODB_URI;
+
+  const schemeLen = 'mongodb+srv://'.length;
+  const at = MONGODB_URI.indexOf('@');
+  const slash = MONGODB_URI.indexOf('/', schemeLen);
+
+  const host = srvHost();
+  if (!host) return MONGODB_URI;
+  const seedlist = await resolveSeedlist(host);
+  if (!seedlist.length) return MONGODB_URI;
+
+  const auth = at !== -1 ? MONGODB_URI.slice(schemeLen, at) : '';
+  const rest = slash !== -1 ? MONGODB_URI.slice(slash) : '';
+  const sep = rest.includes('?') ? '&' : '?';
+  return `mongodb://${auth}@${seedlist.join(',')}${rest}${sep}tls=true`;
 }
 
 export function hasMongoConfig(): boolean {
@@ -74,12 +101,9 @@ export async function connectDB() {
     return g.__mongoConn;
   }
 
-  const host = srvHost();
-  if (host) {
-    await ensureSrvResolution(host);
-  }
+  const uri = await toDirectUri();
 
-  g.__mongoConn = await mongoose.connect(MONGODB_URI, {
+  g.__mongoConn = await mongoose.connect(uri, {
     dbName: 'bludecor',
     serverSelectionTimeoutMS: 12000,
     connectTimeoutMS: 12000,

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from '@/lib/supabase';
+import { cms } from '@/lib/cms-client';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 export default function SettingsAdmin() {
@@ -28,7 +28,7 @@ export default function SettingsAdmin() {
 
   const fetchSettings = useCallback(async () => {
     try {
-      const { data, error } = await supabase.from('site_settings').select('*');
+      const { data, error } = await cms.from('site_settings').select('*');
       if (error) throw error;
       if (data) {
         const mapped = data.reduce((acc: any, item) => {
@@ -59,7 +59,7 @@ export default function SettingsAdmin() {
     setLoading(true);
     try {
       const updates = Object.entries(config).map(([key, value]) => ({ key, value }));
-      const { error } = await supabase.from('site_settings').upsert(updates, { onConflict: 'key' });
+      const { error } = await cms.from('site_settings').upsert(updates, { onConflict: 'key' });
       if (error) throw error;
       
       await triggerSystemRevalidate();

@@ -13,7 +13,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription, SheetC
 import { adminNavLinks } from '@/data/site-data';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from '@/lib/supabase';
+import { cms } from '@/lib/cms-client';
 import { useSiteSettings } from '@/hooks/use-site-settings';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -57,7 +57,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     setLoginLoading(true);
     setLoginError('');
     try {
-      const { data, error: queryError } = await supabase
+      const { data, error: queryError } = await cms
         .rpc('login_user', { p_username: loginUser.trim(), p_password: loginPass });
       if (queryError || !data || data.length === 0) {
         setLoginError('Kredensial tidak valid.');

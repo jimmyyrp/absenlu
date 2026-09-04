@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
+import { cms } from "@/lib/cms-client";
 
 type SiteSettings = {
   app_name: string;
@@ -55,7 +55,7 @@ export function useSiteSettings() {
 
   const fetchSettings = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await cms
         .from("site_settings")
         .select("key, value");
 
@@ -81,27 +81,4 @@ export function useSiteSettings() {
   }, [fetchSettings]);
 
   return { settings, loading, refresh: fetchSettings };
-}
-
-/**
- * Server-side fetch for generateMetadata.
- * Uses Supabase service client.
- */
-export async function getServerSettings(): Promise<SiteSettings> {
-  try {
-    const { data } = await supabase
-      .from("site_settings")
-      .select("key, value");
-
-    if (!data) return DEFAULTS;
-
-    const mapped: Record<string, string> = {};
-    data.forEach((item) => {
-      mapped[item.key] = item.value;
-    });
-
-    return { ...DEFAULTS, ...mapped };
-  } catch {
-    return DEFAULTS;
-  }
 }

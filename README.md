@@ -15,20 +15,17 @@ Platform profesional untuk jasa dekorasi dan party planner premium di Kota Padan
 
 - Unggah seluruh kode ini ke repository **GitHub** Anda.
 
-### 2. Konfigurasi Supabase (Wajib)
+### 2. Konfigurasi MongoDB (Wajib)
 
-Masuk ke **Supabase SQL Editor** dan jalankan isi dari file `docs/setup.sql`. Skrip ini akan membangun:
-
-- Tabel dengan dukungan Soft-Delete & Retensi 7 Hari.
-- Trigger enkripsi Bcrypt.
-- Fungsi RPC untuk sinkronisasi data.
+Siapkan database **MongoDB Atlas** (db `bludecor`). Seluruh data situs (karya, kategori, user admin, testimonial, media, pengaturan) disimpan di MongoDB; skema dibuat otomatis (auto-seed user, kategori, dan pengaturan saat pertama kali terkoneksi).
 
 ### 3. Deploy ke Vercel
 
 - Hubungkan GitHub Anda di dashboard Vercel.
 - Tambahkan **Environment Variables**:
-  - `NEXT_PUBLIC_SUPABASE_URL`
-  - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  - `MONGODB_URI`
+  - `MONGODB_USERNAME`
+  - `MONGODB_PASSWORD`
 - Klik **Deploy**.
 
 ## 💻 Perintah Terminal (CLI)

@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { Terminal, Database, Download, ShieldCheck, Loader2, RefreshCw, Zap, Activity, Trash2, HardDrive } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { supabase } from '@/lib/supabase';
+import { cms } from '@/lib/cms-client';
 import { useToast } from "@/hooks/use-toast";
 import { auditStorage, purgeOrphanFiles, ORPHAN_GRACE_DAYS, type StorageAuditReport } from '@/lib/storage-sweep';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -41,7 +41,7 @@ export default function DeveloperPage() {
 
   const fetchSystemMeta = async () => {
     try {
-      const { data: users } = await supabase.rpc('get_team_members');
+      const { data: users } = await cms.rpc('get_team_members');
       setSystemStats({ users: users?.length || 0 });
     } catch (e) {}
   };
@@ -50,8 +50,7 @@ export default function DeveloperPage() {
     setLoading(true);
     try {
       const tables = [
-        'users', 'categories', 'sub_categories', 'themes', 'posts', 
-        'post_categories', 'post_sub_categories', 'post_images', 
+        'categories', 'sub_categories', 'themes', 'posts', 
         'testimonials', 'site_settings', 'testimonial_tokens', 'events'
       ];
       
@@ -62,7 +61,7 @@ export default function DeveloperPage() {
       sqlContent += `BEGIN;\n\n`;
 
       for (const table of tables) {
-        const { data, error } = await supabase.from(table).select('*');
+        const { data, error } = await cms.from(table).select('*');
         if (error) continue;
 
         if (data && data.length > 0) {
@@ -149,7 +148,7 @@ export default function DeveloperPage() {
   const runStorageAudit = async () => {
     setAuditLoading(true);
     try {
-      const report = await auditStorage(supabase);
+      const report = await auditStorage();
       setAudit(report);
       toast({
         title: "Audit Selesai",
@@ -166,13 +165,13 @@ export default function DeveloperPage() {
     setSweepConfirmOpen(false);
     setSweepLoading(true);
     try {
-      const { removed, failed, report } = await purgeOrphanFiles(supabase);
+      const { removed, failed, report } = await purgeOrphanFiles();
       setAudit(report);
       if (removed.length === 0 && failed.length > 0) {
         toast({
           variant: "destructive",
           title: "Akses Hapus Ditolak",
-          description: "Kebijakan storage tidak mengizinkan hapus via kunci publik. Konfigurasikan SUPABASE_SERVICE_ROLE_KEY lalu panggil /api/maintenance {action:'sweep'}.",
+          description: "Gagal menghapus media MongoDB. Periksa koneksi database, lalu coba lagi.",
         });
       } else if (removed.length === 0) {
         toast({ title: "Tidak Ada yang Dihapus", description: `Belum ada file yatim berumur >= ${ORPHAN_GRACE_DAYS} hari.` });
@@ -345,7 +344,7 @@ export default function DeveloperPage() {
                 <div className="bg-slate-900 p-8 font-mono text-[11px] text-green-400 space-y-2 min-h-[200px]">
                    <p className="opacity-50">[SYSTEM] Architectural Kernel Active...</p>
                    <p>[CACHE] Invalidation Protocol Ready</p>
-                   <p>[DB] Status: Connected to Supabase</p>
+                   <p>[DB] Status: Connected to MongoDB</p>
                    <p className="text-gold">[CMD] Monitoring blueprint stream...</p>
                    <p className="animate-pulse">_</p>
                 </div>

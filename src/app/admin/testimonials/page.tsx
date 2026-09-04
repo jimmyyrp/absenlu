@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from '@/lib/supabase';
+import { cms } from '@/lib/cms-client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
@@ -36,8 +36,8 @@ export default function TestimonialsAdmin() {
     setLoading(true);
     try {
       const [revs, toks] = await Promise.all([
-        supabase.from('testimonials').select('*').order('id', { ascending: false }),
-        supabase.from('testimonial_tokens').select('*').order('id', { ascending: false })
+        cms.from('testimonials').select('*').order('id', { ascending: false }),
+        cms.from('testimonial_tokens').select('*').order('id', { ascending: false })
       ]);
       setReviews(revs.data || []);
       setTokens(toks.data || []);
@@ -58,7 +58,7 @@ export default function TestimonialsAdmin() {
       crypto.getRandomValues(bytes);
       const token = Array.from(bytes, b => b.toString(36).padStart(2, '0')).join('').slice(0, 12);
 
-      const { error } = await supabase.from('testimonial_tokens').insert([{ 
+      const { error } = await cms.from('testimonial_tokens').insert([{ 
         token, usage_limit: Math.max(1, usageLimit), usage_count: 0 
       }]);
       
@@ -87,27 +87,13 @@ export default function TestimonialsAdmin() {
     if (!deleteReviewId) return;
     setIsSubmitting(true);
     try {
-      const { data: review } = await supabase.from('testimonials').select('id').eq('id', deleteReviewId).single();
+      const { data: review } = await cms.from('testimonials').select('id').eq('id', deleteReviewId).single();
       if (!review) throw new Error("Ulasan tidak ditemukan.");
 
-      const { error: deleteError } = await supabase.from('testimonials').delete().eq('id', deleteReviewId);
+      const { error: deleteError } = await cms.from('testimonials').delete().eq('id', deleteReviewId);
       if (deleteError) throw deleteError;
 
-      const { data: tokenRow } = await supabase
-        .from('testimonial_tokens')
-        .select('id, usage_count')
-        .order('id', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (tokenRow && tokenRow.usage_count > 0) {
-        await supabase
-          .from('testimonial_tokens')
-          .update({ usage_count: tokenRow.usage_count - 1 })
-          .eq('id', tokenRow.id);
-      }
-
-      toast({ title: "Terhapus", description: "Ulasan dibersihkan & kuota dikembalikan." });
+      toast({ title: "Terhapus", description: "Ulasan dibersihkan & kuota token dikembalikan." });
       await fetchData();
     } catch (err: any) {
       toast({ variant: "destructive", title: "Gagal", description: err.message || "Ulasan gagal dihapus." });
@@ -121,7 +107,7 @@ export default function TestimonialsAdmin() {
     if (!deleteTokenId) return;
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from('testimonial_tokens').delete().eq('id', deleteTokenId);
+      const { error } = await cms.from('testimonial_tokens').delete().eq('id', deleteTokenId);
       if (error) throw error;
       toast({ title: "Terhapus", description: "Akses dicabut." });
       setTokens(prev => prev.filter(t => t.id !== deleteTokenId));

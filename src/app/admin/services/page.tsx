@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from '@/lib/supabase';
+import { cms } from '@/lib/cms-client';
 import { cn } from '@/lib/utils';
 import { formatPrice } from '@/lib/formatters';
 
@@ -64,12 +64,12 @@ export default function ServicesAdmin() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: cats } = await supabase.from('categories').select('*').filter('deleted_at', 'is', null).order('name');
+      const { data: cats } = await cms.from('categories').select('*').filter('deleted_at', 'is', null).order('name');
       setCategories(cats || []);
 
       const table = activeTab === 'categories' ? 'categories' : 'sub_categories';
       const select = activeTab === 'categories' ? '*' : '*, categories(name)';
-      const { data, error } = await supabase.from(table).select(select).filter('deleted_at', 'is', null).order('name');
+      const { data, error } = await cms.from(table).select(select).filter('deleted_at', 'is', null).order('name');
       if (error) throw error;
       setItems(data || []);
     } catch (err) {
@@ -137,11 +137,11 @@ export default function ServicesAdmin() {
       }
 
       if (editingItem) {
-        const { error } = await supabase.from(table).update(payload).eq('id', editingItem.id);
+        const { error } = await cms.from(table).update(payload).eq('id', editingItem.id);
         if (error) throw error;
         toast({ title: "Berhasil", description: "Basis data telah diperbarui." });
       } else {
-        const { error } = await supabase.from(table).insert([payload]);
+        const { error } = await cms.from(table).insert([payload]);
         if (error) throw error;
         toast({ title: "Berhasil", description: "Item baru telah ditambahkan." });
       }
@@ -157,7 +157,7 @@ export default function ServicesAdmin() {
   const checkUsage = async (ids: number[]) => {
     const table = activeTab === 'categories' ? 'post_categories' : 'post_sub_categories';
     const column = activeTab === 'categories' ? 'category_id' : 'sub_category_id';
-    const { data, error } = await supabase.from(table).select(column).in(column, ids);
+    const { data, error } = await cms.from(table).select(column).in(column, ids);
     if (error) {
       toast({ variant: "destructive", title: "Gagal Memverifikasi", description: "Tidak dapat memeriksa penggunaan data. Periksa koneksi." });
       return true;
@@ -192,7 +192,7 @@ export default function ServicesAdmin() {
       }
 
       const table = activeTab === 'categories' ? 'categories' : 'sub_categories';
-      const { error } = await supabase.from(table).delete().in('id', selectedIds);
+      const { error } = await cms.from(table).delete().in('id', selectedIds);
       if (error) throw error;
       toast({ title: "Berhasil", description: "Katalog pilihan telah dibersihkan." });
       await fetchData();
@@ -362,7 +362,7 @@ export default function ServicesAdmin() {
                  setIsSubmitting(true);
                  try {
                    const table = activeTab === 'categories' ? 'categories' : 'sub_categories';
-                   const { error } = await supabase.from(table).delete().eq('id', deleteId);
+                   const { error } = await cms.from(table).delete().eq('id', deleteId);
                    if (error) throw error;
                    toast({ title: "Terhapus", description: "Item telah dibersihkan dari arsip." });
                    await fetchData();

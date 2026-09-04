@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from '@/lib/supabase';
+import { cms } from '@/lib/cms-client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
@@ -79,7 +79,6 @@ export default function EventsAdmin() {
   const [subCategories, setSubCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [tableMissing, setTableMissing] = useState(false);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<EventItem | null>(null);
@@ -90,16 +89,12 @@ export default function EventsAdmin() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    setTableMissing(false);
     try {
       const [evRes, catRes, subRes] = await Promise.all([
-        supabase.from('events').select('*').filter('deleted_at', 'is', null).order('start_date', { ascending: false }),
-        supabase.from('categories').select('*').filter('deleted_at', 'is', null).order('name'),
-        supabase.from('sub_categories').select('*').filter('deleted_at', 'is', null).order('name'),
+        cms.from('events').select('*').filter('deleted_at', 'is', null).order('start_date', { ascending: false }),
+        cms.from('categories').select('*').filter('deleted_at', 'is', null).order('name'),
+        cms.from('sub_categories').select('*').filter('deleted_at', 'is', null).order('name'),
       ]);
-      if (evRes.error && evRes.error.code === '42P01') {
-        setTableMissing(true);
-      }
       setEvents(evRes.data || []);
       setCategories(catRes.data || []);
       setSubCategories(subRes.data || []);
@@ -168,11 +163,11 @@ export default function EventsAdmin() {
       };
 
       if (editingEvent) {
-        const { error } = await supabase.from('events').update(payload).eq('id', editingEvent.id);
+        const { error } = await cms.from('events').update(payload).eq('id', editingEvent.id);
         if (error) throw error;
         toast({ title: "Event Diperbarui", description: `"${payload.name}" berhasil diperbarui.` });
       } else {
-        const { error } = await supabase.from('events').insert([payload]);
+        const { error } = await cms.from('events').insert([payload]);
         if (error) throw error;
         toast({ title: "Event Dibuat", description: `"${payload.name}" berhasil dibuat.` });
       }
@@ -189,7 +184,7 @@ export default function EventsAdmin() {
 
   const handleToggleActive = async (ev: EventItem) => {
     try {
-      const { error } = await supabase.from('events').update({ is_active: !ev.is_active }).eq('id', ev.id);
+      const { error } = await cms.from('events').update({ is_active: !ev.is_active }).eq('id', ev.id);
       if (error) throw error;
       setEvents(prev => prev.map(e => e.id === ev.id ? { ...e, is_active: !e.is_active } : e));
       toast({ title: ev.is_active ? "Event Dinonaktifkan" : "Event Diaktifkan", description: `"${ev.name}" telah diperbarui.` });
@@ -203,7 +198,7 @@ export default function EventsAdmin() {
     if (!deleteId) return;
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.from('events').update({ deleted_at: new Date().toISOString() }).eq('id', deleteId);
+      const { error } = await cms.from('events').update({ deleted_at: new Date().toISOString() }).eq('id', deleteId);
       if (error) throw error;
       setEvents(prev => prev.filter(e => e.id !== deleteId));
       toast({ title: "Event Dihapus", description: "Event telah dihapus permanen." });
@@ -233,30 +228,6 @@ export default function EventsAdmin() {
           <Plus size={16} className="mr-3 group-hover:rotate-90 transition-transform" /> BUAT EVENT
         </Button>
       </div>
-
-      {/* Table Missing Warning */}
-      {tableMissing && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5 space-y-3">
-          <div className="flex items-start gap-3">
-            <AlertTriangle size={16} className="text-amber-500 mt-0.5 shrink-0" />
-            <div className="space-y-2">
-              <p className="text-[11px] font-bold text-amber-700">Tabel events belum tersedia</p>
-              <p className="text-[10px] text-amber-600 leading-relaxed">
-                Jalankan migration <code className="bg-amber-100 px-1.5 py-0.5 rounded text-[9px] font-mono">001_initial_schema.sql</code> melalui Dashboard Supabase &rarr; SQL Editor untuk membuat tabel event.
-              </p>
-              <div className="bg-white rounded-xl p-3 border border-amber-100">
-                <p className="text-[8px] font-bold text-amber-500 uppercase tracking-wider mb-2">Langkah:</p>
-                <ol className="text-[9px] text-slate-600 space-y-1 list-decimal ml-4">
-                  <li>Buka <span className="font-bold">Supabase Dashboard</span> &rarr; SQL Editor</li>
-                  <li>Salin isi file <code className="bg-slate-100 px-1 rounded">migrations/001_initial_schema.sql</code></li>
-                  <li>Paste ke SQL Editor dan klik <span className="font-bold">Run</span></li>
-                  <li>Refresh halaman ini</li>
-                </ol>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Info Banner */}
       <div className="bg-gold/5 border border-gold/20 rounded-2xl p-4 flex items-start gap-3">

@@ -9,17 +9,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf .next node_modules && npm install",
-    "maintenance": "curl -X POST http://localhost:9002/api/maintenance",
-    "db:migrate": "node scripts/migrate.js",
-    "db:migrate:status": "node scripts/migrate.js --status",
-    "db:migrate:rollback": "node scripts/migrate.js --rollback",
-    "db:migrate:fresh": "node scripts/migrate.js --fresh",
-    "db:migrate:api": "node scripts/migrate-supabase.js",
-    "migrate": "node scripts/migrate.js",
-    "migrate:status": "node scripts/migrate.js --status",
-    "migrate:rollback": "node scripts/migrate.js --rollback",
-    "migrate:fresh": "node scripts/migrate.js --fresh",
-    "migrate:api": "node scripts/migrate-supabase.js"
+    "maintenance": "curl -X POST http://localhost:9002/api/maintenance"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.3",
@@ -44,7 +34,7 @@
     "@radix-ui/react-tabs": "^1.1.3",
     "@radix-ui/react-toast": "^1.2.6",
     "@radix-ui/react-tooltip": "^1.1.8",
-    "@supabase/supabase-js": "^2.48.1",
+    "bcryptjs": "^3.0.3",
     "browser-image-compression": "^2.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -67,6 +57,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/jszip": "^3.4.0",
     "@types/node": "^20",
     "@types/react": "^19.2.1",

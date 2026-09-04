@@ -9,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { supabase } from '@/lib/supabase';
+import { cms } from '@/lib/cms-client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -58,7 +58,7 @@ export default function ReviewPage() {
         return;
       }
       try {
-        const { data, error } = await supabase
+        const { data, error } = await cms
           .from('testimonial_tokens')
           .select('*')
           .eq('token', params.token as string)
@@ -88,7 +88,7 @@ export default function ReviewPage() {
     setSubmitting(true);
     try {
       // Menggunakan RPC untuk keamanan dan otomatisasi update kuota token
-      const { data, error: rpcError } = await supabase.rpc('submit_testimonial_with_token', {
+      const { data, error: rpcError } = await cms.rpc('submit_testimonial_with_token', {
         p_name: formData.name.trim().slice(0, LIMITS.NAME),
         p_role: formData.role,
         p_text: formData.text.trim().slice(0, LIMITS.TEXT),

@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from '@/lib/supabase';
+import { cms } from '@/lib/cms-client';
 import { cn } from '@/lib/utils';
 
 /**
@@ -67,7 +67,7 @@ export default function UsersAdmin() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('get_team_members');
+      const { data, error } = await cms.rpc('get_team_members');
       if (error) throw error;
       setUsers(data || []);
     } catch (err: any) {
@@ -130,7 +130,7 @@ export default function UsersAdmin() {
     if (!isFormValid) return;
     setSubmitting(true);
     try {
-      const { error } = await supabase.rpc('insert_user', {
+      const { error } = await cms.rpc('insert_user', {
         p_username: formData.username.trim().toLowerCase(),
         p_password: formData.password,
         p_full_name: formData.full_name.trim(),
@@ -159,7 +159,7 @@ export default function UsersAdmin() {
     if (!assertDeletable(targets)) return;
     setSubmitting(true);
     try {
-      const { error } = await supabase.rpc('delete_users', { p_ids: selectedIds });
+      const { error } = await cms.rpc('delete_users', { p_ids: selectedIds });
       if (error) throw error;
       
       setUsers(prev => prev.filter(u => !selectedIds.includes(u.id)));
@@ -361,7 +361,7 @@ export default function UsersAdmin() {
                 if (target && !assertDeletable([target])) { setDeleteConfirmId(null); return; }
                 setSubmitting(true);
                try {
-                  const { error } = await supabase.rpc('delete_users', { p_ids: [deleteConfirmId] });
+                  const { error } = await cms.rpc('delete_users', { p_ids: [deleteConfirmId] });
                   if (error) throw error;
                   setUsers(prev => prev.filter(u => u.id !== deleteConfirmId));
                   toast({ title: "Terhapus", description: "Personel telah dikeluarkan." });

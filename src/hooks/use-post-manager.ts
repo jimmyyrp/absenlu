@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { cms } from '@/lib/cms-client';
 import { compressAndUpload } from '@/lib/image-upload';
 import { deleteStaleGalleryFiles } from '@/lib/storage-sweep';
 
@@ -53,13 +53,14 @@ export function usePostManager() {
 
       let postId: number;
       if (editingItem) {
-        const { error } = await supabase.from('posts').update(postPayload).eq('id', editingItem.id);
+        const { error } = await cms.from('posts').update(postPayload).eq('id', editingItem.id);
         if (error) throw error;
         postId = editingItem.id;
       } else {
-        const { data, error } = await supabase.from('posts').insert([postPayload]).select().single();
+        const { data, error } = await cms.from('posts').insert([postPayload]);
         if (error) throw error;
-        postId = data.id;
+        postId = Array.isArray(data) ? data?.[0]?.id : data?.id;
+        if (!postId) throw new Error('Gagal membuat karya.');
       }
 
       // Upload images
@@ -67,7 +68,7 @@ export function usePostManager() {
       for (let i = 0; i < formData.gallery.length; i++) {
         const item = formData.gallery[i];
         if (item.file) {
-          const url = await compressAndUpload(item.file, `${postId}_${Date.now()}_${i}.webp`);
+          const url = await compressAndUpload(item.file, `${postId}_${Date.now()}_${i}.webp`, postId);
           if (!url) throw new Error('Unggah media gagal. Periksa koneksi dan format gambar.');
           finalUrls.push(url);
         } else {
@@ -81,27 +82,27 @@ export function usePostManager() {
       const imagesChanged = hasNewImages || imagesCountChanged;
 
       if (imagesChanged) {
-        const { error: delImgErr } = await supabase.from('post_images').delete().eq('post_id', postId);
+        const { error: delImgErr } = await cms.from('post_images').delete().eq('post_id', postId);
         if (delImgErr) throw delImgErr;
         if (finalUrls.length > 0) {
-          const { error: insImgErr } = await supabase.from('post_images').insert(
+          const { error: insImgErr } = await cms.from('post_images').insert(
             finalUrls.map((url, i) => ({ post_id: postId, url_images: url, urutan: i }))
           );
           if (insImgErr) throw insImgErr;
         }
-        await deleteStaleGalleryFiles(supabase, postId, finalUrls);
+        await deleteStaleGalleryFiles(undefined, postId, finalUrls);
       }
 
       // Clean and rebuild categories / sub-categories
-      await supabase.from('post_categories').delete().eq('post_id', postId);
+      await cms.from('post_categories').delete().eq('post_id', postId);
       if (formData.category_ids.length > 0) {
-        await supabase.from('post_categories').insert(
+        await cms.from('post_categories').insert(
           formData.category_ids.map(id => ({ post_id: postId, category_id: id }))
         );
       }
-      await supabase.from('post_sub_categories').delete().eq('post_id', postId);
+      await cms.from('post_sub_categories').delete().eq('post_id', postId);
       if (formData.sub_category_ids.length > 0) {
-        await supabase.from('post_sub_categories').insert(
+        await cms.from('post_sub_categories').insert(
           formData.sub_category_ids.map(id => ({ post_id: postId, sub_category_id: id }))
         );
       }
@@ -117,7 +118,7 @@ export function usePostManager() {
   }, []);
 
   const softDeletePost = useCallback(async (postId: number): Promise<boolean> => {
-    const { error } = await supabase.from('posts').update({ deleted_at: new Date().toISOString() }).eq('id', postId);
+    const { error } = await cms.from('posts').update({ deleted_at: new Date().toISOString() }).eq('id', postId);
     if (error) {
       console.error('Post delete error:', error.message);
       return false;
@@ -132,15 +133,16 @@ export function usePostManager() {
    */
   const duplicatePost = useCallback(async (post: any): Promise<number | null> => {
     try {
-      const { data, error } = await supabase.from('posts').insert([{
+      const { data, error } = await cms.from('posts').insert([{
         title: `${post.title} - Salinan`.slice(0, 120),
         price: post.price || 0,
         theme_id: post.theme_id ?? null,
         views: 0,
         updated_at: new Date().toISOString()
-      }]).select().single();
+      }]);
       if (error) throw error;
-      const newId = data.id;
+      const newId = Array.isArray(data) ? data?.[0]?.id : data?.id;
+      if (!newId) throw new Error('Gagal membuat duplikat.');
 
       const images = (post.images || []).map((img: any, i: number) => ({
         post_id: newId, url_images: img.url_images, urutan: img.urutan ?? i
@@ -148,9 +150,9 @@ export function usePostManager() {
       const cats = (post.categories || []).map((c: any) => ({ post_id: newId, category_id: c.id }));
       const subs = (post.sub_categories || []).map((sc: any) => ({ post_id: newId, sub_category_id: sc.id }));
 
-      if (images.length > 0) { const r = await supabase.from('post_images').insert(images); if (r.error) throw r.error; }
-      if (cats.length > 0) { const r = await supabase.from('post_categories').insert(cats); if (r.error) throw r.error; }
-      if (subs.length > 0) { const r = await supabase.from('post_sub_categories').insert(subs); if (r.error) throw r.error; }
+      if (images.length > 0) { const r = await cms.from('post_images').insert(images); if (r.error) throw r.error; }
+      if (cats.length > 0) { const r = await cms.from('post_categories').insert(cats); if (r.error) throw r.error; }
+      if (subs.length > 0) { const r = await cms.from('post_sub_categories').insert(subs); if (r.error) throw r.error; }
 
       return newId;
     } catch (err) {
@@ -161,10 +163,10 @@ export function usePostManager() {
 
   const loadAllPostData = useCallback(async () => {
     const [postsRes, catRes, subRes, themeRes] = await Promise.all([
-      supabase.rpc('get_posts_complete'),
-      supabase.from('categories').select('*').filter('deleted_at', 'is', null).order('name'),
-      supabase.from('sub_categories').select('*').filter('deleted_at', 'is', null).order('name'),
-      supabase.from('themes').select('*').filter('deleted_at', 'is', null).order('name'),
+      cms.rpc('get_posts_complete'),
+      cms.from('categories').select('*').filter('deleted_at', 'is', null).order('name'),
+      cms.from('sub_categories').select('*').filter('deleted_at', 'is', null).order('name'),
+      cms.from('themes').select('*').filter('deleted_at', 'is', null).order('name'),
     ]);
 
     if (postsRes.error) {

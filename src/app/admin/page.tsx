@@ -9,7 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { cms } from '@/lib/cms-client';
 import { cn } from '@/lib/utils';
 import { formatViews } from '@/lib/formatters';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -77,10 +77,10 @@ export default function AdminDashboard() {
       setLoading(true);
       try {
         const [portfolioRes, teamRes, testCountRes, testListRes] = await Promise.all([
-          supabase.rpc('get_posts_complete'),
-          supabase.rpc('get_team_members'),
-          supabase.from('testimonials').select('id', { count: 'exact', head: true }).filter('deleted_at', 'is', null),
-          supabase.from('testimonials').select('name, role, text, rating')
+          cms.rpc('get_posts_complete'),
+          cms.rpc('get_team_members'),
+          cms.from('testimonials').select('id', { count: 'exact', head: true }).filter('deleted_at', 'is', null),
+          cms.from('testimonials').select('name, role, text, rating')
             .filter('deleted_at', 'is', null)
             .order('id', { ascending: false })
             .limit(4)
