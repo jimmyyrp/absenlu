@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { Plus, Trash2, Users, ClipboardList, Tags, Settings as SettingsIcon, Pencil } from 'lucide-react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { Plus, Trash2, Users, ClipboardList, Tags, Settings as SettingsIcon, Pencil, Database } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useOps, userFirst } from '@/lib/ops/store';
+import { fetchOpsHealth, type OpsHealth } from '@/lib/ops/api';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,10 +35,21 @@ type TabValue = typeof TAB_LIST[number]['value'];
 const VALID_TABS: TabValue[] = ['tim', 'jenis', 'template', 'sistem'];
 
 export default function PengaturanPage() {
-  const { state, currentUser, addUser, updateUser, deleteUser, updateSettings } = useOps();
+  const { state, currentUser, addUser, updateUser, deleteUser, updateSettings, syncStatus, lastSavedAt } = useOps();
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();
+
+  const [health, setHealth] = useState<OpsHealth | null>(null);
+  const [healthError, setHealthError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchOpsHealth()
+      .then((h) => { if (!cancelled) { setHealth(h); setHealthError(!h); } })
+      .catch(() => { if (!cancelled) setHealthError(true); });
+    return () => { cancelled = true; };
+  }, []);
 
   const rawTab = searchParams.get('tab');
   const tab: TabValue = (rawTab && VALID_TABS.includes(rawTab as TabValue)) ? (rawTab as TabValue) : 'tim';
@@ -289,6 +301,9 @@ export default function PengaturanPage() {
                 <Button variant="outline" onClick={() => toast({ title: 'Tersimpan otomatis' })}>Simpan</Button>
               </div>
             </div>
+
+            <StorageStatusCard health={health} healthError={healthError} syncStatus={syncStatus} lastSavedAt={lastSavedAt} />
+
             <div className="flex items-center justify-between py-3 border-t border-slate-50">
               <div>
                 <p className="text-sm font-semibold text-navy">Absensi Wajib</p>
@@ -301,7 +316,8 @@ export default function PengaturanPage() {
               <p className="text-[11px] text-slate-400 mt-2 leading-relaxed">
                 Pusat data sistem ini adalah <span className="font-bold text-navy">Decor / Proyek</span>, bukan absensi.
                 Absensi bersifat opsional; yang utama adalah kegiatan &amp; tugas yang benar-benar dikerjakan.
-                Data tersimpan di localStorage browser (statis, tanpa database).
+                Data tersimpan di <span className="font-bold text-navy">MongoDB Atlas (cloud)</span> dan tersinkron otomatis;
+                browser hanya menjadi cache offline.
               </p>
             </div>
           </div>
@@ -347,6 +363,77 @@ export default function PengaturanPage() {
           </form>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+/* ─── Status Penyimpanan (MongoDB Atlas) ─────────────────────────────── */
+const SYNC_LABEL: Record<string, { label: string; color: string }> = {
+  loading: { label: 'Memuat…', color: 'bg-slate-100 text-slate-500' },
+  saving: { label: 'Menyimpan…', color: 'bg-amber-100 text-amber-700' },
+  synced: { label: 'Tersinkron', color: 'bg-emerald-100 text-emerald-700' },
+  offline: { label: 'Offline (cache)', color: 'bg-slate-100 text-slate-500' },
+  error: { label: 'Gagal sinkron', color: 'bg-red-100 text-red-700' },
+};
+
+function StorageStatusCard({
+  health, healthError, syncStatus, lastSavedAt,
+}: {
+  health: OpsHealth | null;
+  healthError: boolean;
+  syncStatus: string;
+  lastSavedAt: string | null;
+}) {
+  const badge = SYNC_LABEL[syncStatus] ?? SYNC_LABEL.loading;
+  const connected = health?.connected === true;
+  const totalRecords =
+    health
+      ? Object.values(health.docStats).reduce((s, n) => s + n, 0)
+      : 0;
+
+  return (
+    <div className="rounded-2xl border border-slate-100 bg-slate-50/60 p-4">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-navy flex items-center gap-2">
+          <Database size={15} className="text-gold" /> Penyimpanan Data
+        </p>
+        <span className={cn("inline-flex rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-widest", badge.color)}>
+          {badge.label}
+        </span>
+      </div>
+
+      <ul className="mt-3 space-y-2 text-[11px] text-slate-500">
+        <li className="flex justify-between gap-2">
+          <span className="text-slate-400">Database</span>
+          <span className="font-semibold text-navy">MongoDB Atlas</span>
+        </li>
+        <li className="flex justify-between gap-2">
+          <span className="text-slate-400">Koneksi</span>
+          <span className={cn("font-semibold", connected ? "text-emerald-600" : "text-red-500")}>
+            {healthError || !health ? 'Tidak terhubung' : (connected ? 'Terhubung' : 'Belum tersedia')}
+          </span>
+        </li>
+        {health && (
+          <li className="flex justify-between gap-2">
+            <span className="text-slate-400">Data tersimpan</span>
+            <span className="font-semibold text-navy">{totalRecords} record</span>
+          </li>
+        )}
+        {lastSavedAt && (
+          <li className="flex justify-between gap-2">
+            <span className="text-slate-400">Terakhir disimpan</span>
+            <span className="font-semibold text-navy">
+              {new Date(lastSavedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB
+            </span>
+          </li>
+        )}
+      </ul>
+
+      {syncStatus === 'error' && (
+        <p className="mt-3 rounded-lg bg-red-50 border border-red-200 text-[10px] text-red-600 p-2.5">
+          Data tidak bisa dikirim ke server. Perubahan masih tersimpan di browser dan akan dicoba kirim ulang saat koneksi pulih.
+        </p>
+      )}
     </div>
   );
 }

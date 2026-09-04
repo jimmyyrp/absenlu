@@ -8,8 +8,12 @@ import type {
 } from './types';
 import { SEED_STATE } from './seed';
 import { opsUserId, opsRole, opsLogout } from './auth';
+import { fetchOpsState, saveOpsState } from './api';
 
+// localStorage hanya cache offline. MongoDB (server) adalah sumber data utama.
 const STORAGE_KEY = 'bludecor_ops_state_v3';
+
+export type SyncStatus = 'loading' | 'synced' | 'saving' | 'offline' | 'error';
 
 type UID = () => string;
 const uid: UID = () =>
@@ -82,11 +86,14 @@ interface OpsContextValue {
   monthlyReportMonth: string;
   setMonthlyReportMonth: (m: string) => void;
   resetData: () => void;
+  // sinkronisasi MongoDB
+  syncStatus: SyncStatus;
+  lastSavedAt: string | null;
 }
 
 const OpsContext = createContext<OpsContextValue | null>(null);
 
-function loadState(): OpsState {
+function loadLocalState(): OpsState {
   if (typeof window === 'undefined') return SEED_STATE;
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -100,45 +107,97 @@ function loadState(): OpsState {
   return SEED_STATE;
 }
 
+function cacheLocal(state: OpsState) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // storage penuh / private mode
+  }
+}
+
 export function OpsProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<OpsState>(SEED_STATE);
   const [ready, setReady] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>('loading');
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
 
   useEffect(() => {
-    const loaded = loadState();
-    // User aktif mengikuti role yang login (u1=owner u2=admin u3=crew)
-    const uid = opsUserId();
-    const role = opsRole();
-    const username = localStorage.getItem('bludecor_ops_username')?.trim().toLowerCase();
-    const sessionUser = username
-      ? loaded.users.find((u) => u.active && u.username.toLowerCase() === username)
-      : loaded.users.find((u) => u.active && uid && u.id === uid);
-    if (sessionUser && (!role || sessionUser.role === role)) {
-      loaded.currentUserId = sessionUser.id;
-    } else {
-      opsLogout();
-      window.location.replace('/login');
-      return;
-    }
-    setState(loaded);
-    setReady(true);
-    const handler = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY && e.newValue) {
-        try {
-          setState(JSON.parse(e.newValue));
-        } catch {}
+    let cancelled = false;
+    let unlisten = () => {};
+
+    (async () => {
+      // 1) Sumber data utama: MongoDB. Fallback: cache lokal, lalu seed.
+      const cached = loadLocalState();
+      let loaded: OpsState;
+      try {
+        const server = await fetchOpsState();
+        if (server) {
+          loaded = { ...SEED_STATE, ...server };
+          cacheLocal(loaded);
+          if (!cancelled) setSyncStatus('synced');
+        } else {
+          loaded = cached;
+          if (!cancelled) setSyncStatus(cached !== SEED_STATE ? 'offline' : 'loading');
+        }
+      } catch {
+        loaded = cached;
+        if (!cancelled) setSyncStatus('offline');
       }
+      if (cancelled) return;
+
+      // User aktif mengikuti role yang login (u1=owner u2=admin u3=crew)
+      const uid = opsUserId();
+      const role = opsRole();
+      const username = localStorage.getItem('bludecor_ops_username')?.trim().toLowerCase();
+      const sessionUser = username
+        ? loaded.users.find((u) => u.active && u.username.toLowerCase() === username)
+        : loaded.users.find((u) => u.active && uid && u.id === uid);
+      if (sessionUser && (!role || sessionUser.role === role)) {
+        loaded.currentUserId = sessionUser.id;
+      } else {
+        opsLogout();
+        window.location.replace('/login');
+        return;
+      }
+      setState(loaded);
+      setReady(true);
+
+      const handler = (e: StorageEvent) => {
+        if (e.key === STORAGE_KEY && e.newValue) {
+          try {
+            setState(JSON.parse(e.newValue));
+          } catch {}
+        }
+      };
+      window.addEventListener('storage', handler);
+      unlisten = () => window.removeEventListener('storage', handler);
+    })();
+
+    return () => {
+      cancelled = true;
+      unlisten();
     };
-    window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
   }, []);
 
+  // Cache lokal (offline) untuk setiap perubahan state
   useEffect(() => {
-    if (ready) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      } catch {}
-    }
+    if (ready) cacheLocal(state);
+  }, [state, ready]);
+
+  // Sinkronisasi ke MongoDB (debounce). MongoDB adalah sumber data utama.
+  useEffect(() => {
+    if (!ready) return;
+    setSyncStatus('saving');
+    const timer = setTimeout(async () => {
+      const ok = await saveOpsState(state);
+      if (ok) {
+        setSyncStatus('synced');
+        setLastSavedAt(new Date().toISOString());
+      } else {
+        setSyncStatus('error');
+      }
+    }, 600);
+    return () => clearTimeout(timer);
   }, [state, ready]);
 
   const patchState = useCallback((fn: (prev: OpsState) => OpsState) => {
@@ -532,6 +591,8 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
 
     monthlyReportMonth: state.monthlyReportMonth,
     setMonthlyReportMonth: (m) => patchState((p) => ({ ...p, monthlyReportMonth: m })),
+    syncStatus,
+    lastSavedAt,
     resetData: () => {
       if (!isOwner) return;
       setState((prev) => {

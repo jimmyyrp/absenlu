@@ -25,6 +25,8 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Mongoose (native MongoDB driver) must run on the server, not be bundled.
+  serverExternalPackages: ['mongoose'],
   compress: true,
   poweredByHeader: false,
   reactStrictMode: true,
