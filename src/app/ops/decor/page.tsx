@@ -41,7 +41,7 @@ const TAB_ICONS: Record<string, React.ReactNode> = {
 
 const TAB_LIST = [
   { value: 'all', label: 'Semua' },
-  ...DECOR_STATUSES.map((s) => ({ value: s.value, label: s.label })),
+  ...DECOR_STATUSES.filter((s) => s.value !== 'selesai' && s.value !== 'dibatalkan').map((s) => ({ value: s.value, label: s.label })),
 ];
 
 /* ─── Decor Form (unchanged) ──────────────────────────────────────────── */
@@ -212,11 +212,11 @@ export default function DecorPage() {
   const { currentUser, decors, addDecor, updateDecor, deleteDecor, selectDecor, tasks } = useOps();
   const isManager = currentUser.role === 'owner' || currentUser.role === 'admin';
 
-  // Crew melihat semua decor aktif
-  const visibleDecors = useMemo(() => {
-    if (isManager) return decors;
-    return decors.filter((d) => d.status !== 'selesai' && d.status !== 'dibatalkan');
-  }, [decors, isManager]);
+  // Semua user hanya melihat decor aktif (nonaktifkan: selesai & dibatalkan disembunyikan)
+  const visibleDecors = useMemo(
+    () => decors.filter((d) => d.status !== 'selesai' && d.status !== 'dibatalkan'),
+    [decors],
+  );
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -348,6 +348,8 @@ export default function DecorPage() {
       {/* ── Grid ──────────────────────────────────────────────────────────── */}
       {decors.length === 0 ? (
         <EmptyState icon={<CalendarRange size={20} />} title="Belum ada decor" sub="Buat decor pertama Anda." />
+      ) : visibleDecors.length === 0 ? (
+        <EmptyState icon={<CalendarRange size={20} />} title="Tidak ada decor aktif" sub="Decor yang sudah selesai atau dibatalkan disembunyikan dari daftar." />
       ) : shown.length === 0 ? (
         <EmptyState icon={<CalendarRange size={20} />} title="Tidak ditemukan" sub="Coba ubah kata kunci atau pilih tab lain." />
       ) : (
