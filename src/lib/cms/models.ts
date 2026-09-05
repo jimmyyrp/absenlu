@@ -80,7 +80,6 @@ const ThemeSchema = new Schema(
     name: { type: String, required: true },
     ...timestampFields,
   },
-  { _id: false },
 );
 
 const TestimonialTokenSchema = new Schema(
@@ -91,7 +90,6 @@ const TestimonialTokenSchema = new Schema(
     usage_count: { type: Number, default: 0 },
     ...timestampFields,
   },
-  { _id: false },
 );
 
 const SiteSettingSchema = new Schema(
@@ -101,7 +99,6 @@ const SiteSettingSchema = new Schema(
     value: { type: String, default: '' },
     updated_at: { type: Date, default: () => new Date() },
   },
-  { _id: false },
 );
 
 const PostImageSchema = new Schema(
@@ -124,7 +121,6 @@ const PostSchema = new Schema(
     sub_category_ids: { type: [Number], default: [] },
     ...timestampFields,
   },
-  { _id: false },
 );
 
 const EventSchema = new Schema(
