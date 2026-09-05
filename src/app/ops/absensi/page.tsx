@@ -260,6 +260,7 @@ export default function AbsensiPage() {
                   const allDone = dt.done === dt.total;
                   const locked = decorScheduleLocked(selectedDecor);
                   const lockReason = decorScheduleLockReason(selectedDecor);
+                  const hasSchedule = selectedDecor && selectedDecor.workStart && selectedDecor.workEnd;
 
                   return (
                     <div key={dt.decorId} className="rounded-xl border border-slate-100 bg-slate-50 p-3.5">
@@ -304,13 +305,18 @@ export default function AbsensiPage() {
                       )}
 
                       {/* Aksi — bisa mulai hanya dalam jadwal; selesai selalu diizinkan utk sesi aktif */}
-                      {!hasRecord && !locked ? (
+                      {!hasRecord && !locked && hasSchedule ? (
                         <Button
                           className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-10 text-sm font-bold"
                           onClick={() => { setHonestyConfirmed(false); setConfirmAttendance({ decorId: dt.decorId, decorName: dt.decorName, mode: 'masuk' }); }}
                         >
                           <LogIn size={15} className="mr-2" /> Absen Masuk — {dt.decorName}
                         </Button>
+                      ) : !hasRecord && !locked && !hasSchedule ? (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-center">
+                          <p className="text-[11px] text-amber-600 font-bold">Belum ada jadwal kerja</p>
+                          <p className="text-[10px] text-amber-400 mt-0.5">Decor ini belum memiliki jadwal pengerjaan.</p>
+                        </div>
                       ) : activeRecord ? (
                         <Button
                           className={cn(
