@@ -267,7 +267,7 @@ export default function AbsensiPage() {
                       <div className="flex items-center justify-between gap-2 mb-2">
                         <div className="min-w-0">
                           <p className="text-sm font-bold text-navy truncate">{dt.decorName}</p>
-                          <p className="text-[10px] text-slate-400">Absensi kerja per decor</p>
+                          <p className="text-xs text-slate-400">Absensi kerja per decor</p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {doneRecord ? (
@@ -644,14 +644,22 @@ export default function AbsensiPage() {
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
-
-      <Dialog open={showNoWork} onOpenChange={setShowNoWork}>
+      </Dialog>        <Dialog open={showNoWork} onOpenChange={setShowNoWork}>
         <DialogContent className="max-w-sm overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="text-base text-navy">Tidak Bekerja Hari Ini</DialogTitle>
-            <DialogDescription className="text-xs text-slate-400">Konfirmasi bahwa Anda tidak bekerja hari ini.</DialogDescription>
+            <DialogDescription className="text-xs text-slate-400">
+              Konfirmasi bahwa Anda tidak bekerja hari ini. Absensi hari ini tidak akan dicatat.
+            </DialogDescription>
           </DialogHeader>
+          <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-700">
+            <p className="font-bold">Salah klik? Admin/Owner bisa membatalkan atau memperbaiki data ini nanti.</p>
+            <p className="text-amber-600 mt-1">Kalau ini salah tekan, kamu tidak perlu khawatir — Admin/Owner tetap bisa mengembalikan atau memperbaiki untuk kamu.</p>
+          </div>
+          <div className="text-xs text-slate-500 space-y-1.5">
+            <p>Setelah ini, halaman absensi mungkin tidak lagi menampilkan tombol <b className="font-semibold text-slate-600">Absen Masuk</b> atau <b className="font-semibold text-slate-600">Selesai</b> hari ini karena hari kamu sudah tercatat.</p>
+            <p>Fungsi lain seperti Tugas, Decor, Kegiatan, Dokumentasi, dan Pengeluaran tetap bisa dipakai seperti biasa.</p>
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowNoWork(false)}>Batal</Button>
             <Button className="bg-navy text-white" onClick={() => {

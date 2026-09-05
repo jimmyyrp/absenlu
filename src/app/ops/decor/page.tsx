@@ -292,8 +292,8 @@ export default function DecorPage() {
         title="Daftar Decor / Proyek"
         subtitle="Kelola semua pekerjaan dekorasi yang sedang berjalan"
         action={isManager ? (
-          <Button onClick={openCreate} className="bg-navy hover:bg-gold text-white">
-            <Plus size={15} /> Tambah Decor
+          <Button onClick={openCreate} className="bg-navy hover:bg-gold text-white text-sm px-5">
+            <Plus size={15} className="mr-2" /> Tambah Decor
           </Button>
         ) : undefined}
       />
@@ -353,16 +353,16 @@ export default function DecorPage() {
       ) : shown.length === 0 ? (
         <EmptyState icon={<CalendarRange size={20} />} title="Tidak ditemukan" sub="Coba ubah kata kunci atau pilih tab lain." />
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {shown.map((d) => (
-              <DecorCard
+            <DecorCard
               key={d.id}
               d={d}
               taskCount={taskCount(d.id)}
               onSelect={() => { selectDecor(d.id); toast({ title: `Decor "${d.name}" dipilih` }); }}
-                onEdit={isManager ? () => openEdit(d) : undefined}
-                onDelete={isManager ? () => handleDelete(d) : undefined}
-                showRevenue={isManager}
+              onEdit={isManager ? () => openEdit(d) : undefined}
+              onDelete={isManager ? () => handleDelete(d) : undefined}
+              showRevenue={isManager}
             />
           ))}
         </div>

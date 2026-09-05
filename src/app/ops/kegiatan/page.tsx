@@ -46,7 +46,7 @@ export default function KegiatanPage() {
                     {idx + 1}
                   </span>
                   <div className="flex-1 min-w-0 pt-1.5">
-                    <p className="text-sm font-semibold leading-snug text-navy">{t.title}</p>
+                    <p className="text-base font-semibold leading-snug text-navy">{t.title}</p>
                   </div>
                 </li>
               ))}

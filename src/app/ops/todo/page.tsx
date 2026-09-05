@@ -70,68 +70,83 @@ export default function TodoPage() {
       {!selectedDecor ? (
         <EmptyState icon={<ListChecks size={20} />} title="Belum ada decor yang dipilih" sub="Pilih decor dari menu Current Decor di bagian atas." />
       ) : (
-        <div className="space-y-4">
-          <SectionCard
-            title={`Alur Tugas — ${selectedDecor.name}`}
-            action={
-              <div className="flex items-center gap-3">
-                <span className="hidden sm:flex items-center gap-2 text-[10px] font-bold text-slate-400">
-                  {decorTasks.length} langkah
-                </span>
-                {canManageTasks && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => setAddOpen(true)}
-                    className="h-11 gap-2 bg-navy hover:bg-gold text-white text-xs font-black uppercase tracking-widest px-4"
-                  >
-                    <Plus size={13} /> Tambah
-                  </Button>
-                )}
-              </div>
-            }
-          >
-            {showScheduleLock && (
-              <div className="rounded-xl border border-red-200 bg-red-50 p-3 mb-4 flex items-start gap-2">
-                <AlertTriangle size={16} className="text-red-500 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-[11px] font-bold text-red-600">Alur terkunci</p>
-                  <p className="text-[10px] text-red-400 mt-0.5">{scheduleLockReason} Alur tidak dapat diubah di luar jadwal kerja decor.</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="md:col-span-2 space-y-4">
+            <SectionCard
+              title={`Alur Tugas — ${selectedDecor.name}`}
+              action={
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-sm font-bold text-slate-400">
+                    {decorTasks.length} langkah
+                  </span>
+                  {canManageTasks && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => setAddOpen(true)}
+                      className="h-11 gap-2 bg-navy hover:bg-gold text-white text-sm font-black uppercase tracking-widest px-5"
+                    >
+                      <Plus size={14} /> Tambah
+                    </Button>
+                  )}
                 </div>
-              </div>
-            )}
+              }
+            >
+              {showScheduleLock && (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-3 mb-4 flex items-start gap-2">
+                  <AlertTriangle size={16} className="text-red-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-[11px] font-bold text-red-600">Alur terkunci</p>
+                    <p className="text-[10px] text-red-400 mt-0.5">{scheduleLockReason} Alur tidak dapat diubah di luar jadwal kerja decor.</p>
+                  </div>
+                </div>
+              )}
 
-            {decorTasks.length === 0 ? (
-              <EmptyState icon={<ListChecks size={20} />} title="Belum ada langkah kerja" sub={isManager ? 'Tambahkan langkah kerja untuk decor ini.' : 'Belum ada langkah untuk decor ini.'} />
-            ) : (
-              <ol className="relative">
-                {decorTasks.map((t: Task, idx) => (
-                  <li key={t.id} className="relative flex items-start gap-3 pb-5 last:pb-0">
-                    {idx < decorTasks.length - 1 && (
-                      <span className="absolute left-[17px] top-9 bottom-0 w-px bg-slate-200" />
-                    )}
-                    <span className="relative z-10 mt-0.5 shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-[11px] font-black border-2 bg-white border-slate-300 text-slate-400">
-                      {idx + 1}
-                    </span>
-                    <div className="flex-1 min-w-0 pt-1">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <p className="text-sm font-semibold leading-snug text-navy">{t.title}</p>
-                        {canManageTasks && (
-                          <button
-                            onClick={() => setConfirmDelete(t)}
-                            className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 shrink-0"
-                            aria-label="hapus langkah"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        )}
+              {decorTasks.length === 0 ? (
+                <EmptyState icon={<ListChecks size={20} />} title="Belum ada langkah kerja" sub={isManager ? 'Tambahkan langkah kerja untuk decor ini.' : 'Belum ada langkah untuk decor ini.'} />
+              ) : (
+                <div className="space-y-3">
+                  {decorTasks.map((t: Task, idx) => (
+                    <div key={t.id} className="relative flex items-start gap-3 pb-3 last:pb-0">
+                      {idx < decorTasks.length - 1 && (
+                        <span className="absolute left-[17px] top-9 bottom-0 w-px bg-slate-200" />
+                      )}
+                      <span className="relative z-10 mt-0.5 shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-[11px] font-black border-2 bg-white border-slate-300 text-slate-400">
+                        {idx + 1}
+                      </span>
+                      <div className="flex-1 min-w-0 pt-1">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <p className="text-base font-semibold leading-snug text-navy">{t.title}</p>
+                          {canManageTasks && (
+                            <button
+                              onClick={() => setConfirmDelete(t)}
+                              className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 shrink-0"
+                              aria-label="hapus langkah"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </SectionCard>
+                  ))}
+                </div>
+              )}
+            </SectionCard>
+          </div>
+
+          <div className="space-y-4">
+            <SectionCard title="Cara menggunakan tugas">
+              <div className="space-y-3 text-sm text-slate-600">
+                <ul className="space-y-2">
+                  <li>Pilih <b className="text-navy">Decor</b> dulu di menu Current Decor agar langkah kerja muncul di sini.</li>
+                  <li>Gunakan daftar ini sebagai urutan kerja bersama tim.</li>
+                  <li>Hanya pemilik atau admin yang bisa menambah atau menghapus langkah.</li>
+                  <li>Crew bisa melihat langkah dan menandai bagian yang sudah dikerjakan.</li>
+                </ul>
+              </div>
+            </SectionCard>
+          </div>
         </div>
       )}
 
@@ -147,18 +162,18 @@ export default function TodoPage() {
 
           <form id="add-task-form" onSubmit={submitNew} className="space-y-4">
             <div>
-              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nama Kegiatan</Label>
+              <Label className="text-sm font-black uppercase tracking-widest text-slate-400">Nama Kegiatan</Label>
               <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="cth. Pasang pencahayaan" className="mt-1" required />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Atau pilih template</p>
+              <p className="text-sm font-black uppercase tracking-widest text-slate-400 mb-2">Atau pilih template</p>
               <div className="flex flex-wrap gap-2">
                 {state.settings.taskTemplate.map((tpl) => (
                   <button
                     key={tpl}
                     type="button"
                     onClick={() => addFromTemplate(tpl, true)}
-                    className="min-h-11 px-4 py-2 rounded-lg bg-slate-100 hover:bg-gold/15 text-slate-600 hover:text-navy text-xs font-semibold transition-colors"
+                    className="min-h-11 px-4 py-2 rounded-lg bg-slate-100 hover:bg-gold/15 text-slate-600 hover:text-navy text-sm font-semibold transition-colors"
                   >
                     + {tpl}
                   </button>

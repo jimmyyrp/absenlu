@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react';
 import Link from 'next/link';
 import {
-  CalendarRange, Clock4, ListChecks, ChevronRight,
+  CalendarRange, Clock4, ListChecks, ChevronRight, BarChart3,
 } from 'lucide-react';
 import { useOps, userFirst } from '@/lib/ops/store';
 import {
@@ -25,17 +25,16 @@ function QuickCard({
     <Link
       href={href}
       className={cn(
-        "group relative flex min-h-[84px] flex-col items-center justify-center gap-2 rounded-2xl border p-3 sm:min-h-[112px] sm:p-6 shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5 bg-white border-slate-100",
+        "group relative flex flex-col items-center justify-center gap-3 rounded-2xl border p-4 sm:p-6 shadow-sm transition-all hover:shadow-lg hover:-translate-y-0.5 bg-white border-slate-100",
       )}
     >
-      <div className={cn("h-10 w-10 sm:h-14 sm:w-14 rounded-xl sm:rounded-2xl flex items-center justify-center text-white", color)}>
+      <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center text-white", color)}>
         {icon}
       </div>
       <div className="text-center">
-        <p className="text-xs sm:text-sm font-headline font-bold text-navy">{label}</p>
-        {sub && <p className="text-[9px] sm:text-[10px] text-slate-400 mt-0.5 line-clamp-1">{sub}</p>}
+        <p className="text-base sm:text-lg font-headline font-bold text-navy">{label}</p>
+        {sub && <p className="text-xs text-slate-400 mt-1 line-clamp-1">{sub}</p>}
       </div>
-      <ChevronRight size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-200 group-hover:text-gold transition-colors" />
     </Link>
   );
 }
@@ -113,37 +112,54 @@ export default function DashboardPage() {
   return (
     <div className="space-y-5">
       {/* ── Greeting ──────────────────────────────────────────────────────── */}
-      <div>
-        <h2 className="text-xl font-headline font-bold text-navy">
-          Halo, {currentUser.name.split(' ')[0]} 👋
-        </h2>
-        <p className="text-xs text-slate-400 mt-0.5">
-          {new Date(today + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+        <div>
+          <h2 className="text-xl font-headline font-bold text-navy">
+            Halo, {currentUser.name.split(' ')[0]} 👋
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">
+            {new Date(today + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
+        </div>
+        {isManager && (
+          <div className="flex items-center gap-2">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Hari ini:</span>
+            <span className="text-sm font-bold text-navy">
+              {new Date(today + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* ── 3 Quick Access Cards ──────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
+      {/* ── 4 Quick Access Cards ──────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <QuickCard
           href="/ops/absensi"
-          icon={<Clock4 size={26} />}
+          icon={<Clock4 size={28} />}
           label="Absensi"
           sub="Catat kehadiran"
           color="bg-emerald-500"
         />
         <QuickCard
           href="/ops/decor"
-          icon={<CalendarRange size={26} />}
+          icon={<CalendarRange size={28} />}
           label="Decor"
           sub={`${visibleDecors.length} aktif`}
           color="bg-navy"
         />
         <QuickCard
           href="/ops/todo"
-          icon={<ListChecks size={26} />}
+          icon={<ListChecks size={28} />}
           label="Tugas"
           sub={`${tasks.length} langkah`}
           color="bg-gold"
+        />
+        <QuickCard
+          href="/ops/pengeluaran"
+          icon={<BarChart3 size={28} />}
+          label="Pengeluaran"
+          sub={isManager ? 'Catat biaya proses' : 'Khusus manajer'}
+          color="bg-sky-500"
         />
       </div>
 
