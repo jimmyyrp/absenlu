@@ -43,7 +43,7 @@ const timestampFields = {
   created_at: { type: Date, default: () => new Date() },
 };
 
-const WithId = { _id: false, id: { type: Number, required: true, unique: true } };
+const WithId = { id: { type: Number, required: true, unique: true } };
 
 const UserSchema = new Schema(
   {
