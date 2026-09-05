@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { Plus, Trash2, Users, ClipboardList, Tags, Settings as SettingsIcon, Pencil, Database } from 'lucide-react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useOps, userFirst } from '@/lib/ops/store';
-import { fetchOpsHealth, type OpsHealth } from '@/lib/ops/api';
+import { fetchOpsHealth, createOpsAccount, updateOpsAccount, deleteOpsAccount, type OpsHealth } from '@/lib/ops/api';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,27 +66,70 @@ export default function PengaturanPage() {
   const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [role, setRole] = useState<UserRole>('crew');
+  const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
+  const [saving, setSaving] = useState(false);
 
   // jenis kegiatan
   const [newType, setNewType] = useState('');
   // template
   const [newTpl, setNewTpl] = useState('');
 
-  const openCreate = () => { setEditing(undefined); setName(''); setUsername(''); setRole('crew'); setPhone(''); setOpen(true); };
-  const openEdit = (u: OpsUser) => { setEditing(u); setName(u.name); setUsername(u.username); setRole(u.role); setPhone(u.phone || ''); setOpen(true); };
+  const openCreate = () => { setEditing(undefined); setName(''); setUsername(''); setRole('crew'); setPassword(''); setPhone(''); setOpen(true); };
+  const openEdit = (u: OpsUser) => { setEditing(u); setName(u.name); setUsername(u.username); setRole(u.role); setPassword(''); setPhone(u.phone || ''); setOpen(true); };
 
-  const submitUser = (e: React.FormEvent) => {
+  // Pembuatan/penghapusan anggota Tim OPS selalu menggandeng akun cmsusers
+  // (username + password bcrypt) supaya kredensial login OPS & CMS menyatu.
+  const submitUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !username.trim()) return;
-    if (editing) {
-      updateUser(editing.id, { name: name.trim(), username: username.trim(), role, phone: phone.trim() || undefined });
-      toast({ title: 'Anggota diperbarui' });
-    } else {
-      addUser({ name: name.trim(), username: username.trim(), role, phone: phone.trim() || undefined, active: true });
-      toast({ title: 'Anggota ditambahkan' });
+    const cleanName = name.trim();
+    const cleanUsername = username.trim().toLowerCase();
+    if (!cleanName || !cleanUsername) return;
+    if (!password.trim() && !editing) { toast({ title: 'Password wajib diisi' }); return; }
+    setSaving(true);
+    try {
+      if (editing) {
+        const res = await updateOpsAccount({ username: cleanUsername, name: cleanName, role, password: password.trim() || undefined });
+        if (!res.ok) { toast({ title: 'Gagal memperbarui akun', description: res.error }); return; }
+        updateUser(editing.id, { name: cleanName, username: cleanUsername, role, phone: phone.trim() || undefined });
+        toast({ title: 'Anggota diperbarui' });
+      } else {
+        const res = await createOpsAccount({ username: cleanUsername, name: cleanName, role, password: password.trim() });
+        if (!res.ok) { toast({ title: 'Gagal menambah user', description: res.error }); return; }
+        addUser({ name: cleanName, username: cleanUsername, role, phone: phone.trim() || undefined, active: true });
+        toast({ title: 'Anggota ditambahkan' });
+      }
+      setOpen(false);
+    } finally {
+      setSaving(false);
     }
-    setOpen(false);
+  };
+
+  // Ubah role anggota + sinkronkan akun CMS (nonaktif jika gagal).
+  const handleRoleChange = async (u: OpsUser, v: UserRole) => {
+    const res = await updateOpsAccount({ username: u.username, name: u.name, role: v });
+    if (!res.ok) { toast({ title: 'Gagal ubah role', description: res.error }); return; }
+    updateUser(u.id, { role: v });
+    toast({ title: 'Role diperbarui' });
+  };
+
+  // Saklar aktif/tidak aktif = aktifkan/revoke login akun CMS user tsb.
+  const handleActiveChange = async (u: OpsUser, v: boolean) => {
+    if (u.id === state.currentUserId && !v) { toast({ title: 'Tidak bisa menonaktifkan diri sendiri' }); return; }
+    const res = await updateOpsAccount({ username: u.username, name: u.name, role: u.role, active: v });
+    if (!res.ok) { toast({ title: 'Gagal ubah status', description: res.error }); return; }
+    updateUser(u.id, { active: v });
+    toast({ title: v ? 'Anggota diaktifkan' : 'Anggota dinonaktifkan' });
+  };
+
+  // Hapus anggota = hapus hak akses akun cmsusers sehingga tak bisa login lagi.
+  const handleDelete = async (u: OpsUser) => {
+    if (u.id === state.currentUserId) { toast({ title: 'Tidak bisa menghapus diri sendiri' }); return; }
+    if (!confirm(`Hapus user "${u.name}"? Akses login akan dicabut.`)) return;
+    const res = await deleteOpsAccount(u.username);
+    if (!res.ok) { toast({ title: 'Gagal menghapus', description: res.error }); return; }
+    deleteUser(u.id);
+    toast({ title: 'User dihapus' });
   };
 
   const addType = () => {
@@ -165,7 +208,7 @@ export default function PengaturanPage() {
                 {/* Bottom: Controls row */}
                 <div className="flex items-center justify-between pt-2 border-t border-slate-50">
                   <div className="flex items-center gap-2">
-                    <Select value={u.role} onValueChange={(v) => { updateUser(u.id, { role: v as UserRole }); toast({ title: 'Role diperbarui' }); }}>
+                    <Select value={u.role} onValueChange={(v) => handleRoleChange(u, v as UserRole)}>
                       <SelectTrigger className={cn("h-8 w-[90px] text-[9px] rounded-lg border-slate-100",
                         u.role === 'owner' ? "text-gold font-bold" : u.role === 'admin' ? "text-sky-600" : "text-slate-500")}>
                         <SelectValue>{ROLE_LABEL[u.role]}</SelectValue>
@@ -177,7 +220,7 @@ export default function PengaturanPage() {
                     <div className="flex items-center gap-1.5">
                       <Switch
                         checked={u.active}
-                        onCheckedChange={(v) => { updateUser(u.id, { active: v }); toast({ title: v ? 'Anggota diaktifkan' : 'Anggota dinonaktifkan' }); }}
+                        onCheckedChange={(v) => handleActiveChange(u, v)}
                       />
                       <span className={cn("text-[8px] font-bold uppercase tracking-wider", u.active ? "text-emerald-500" : "text-slate-300")}>{u.active ? 'Aktif' : 'Off'}</span>
                     </div>
@@ -186,7 +229,7 @@ export default function PengaturanPage() {
                     <Button variant="ghost" size="icon" className="text-slate-400 h-8 w-8 rounded-xl" onClick={() => openEdit(u)} aria-label="edit"><Pencil size={14} /></Button>
                     <Button
                       variant="ghost" size="icon" className="text-red-400 hover:text-red-500 h-8 w-8 rounded-xl"
-                      onClick={() => { if (u.id === state.currentUserId) { toast({ title: 'Tidak bisa menghapus diri sendiri' }); return; } if (confirm(`Hapus user "${u.name}"?`)) { deleteUser(u.id); toast({ title: 'User dihapus' }); } }}
+                      onClick={() => handleDelete(u)}
                       aria-label="hapus"
                     >
                       <Trash2 size={14} />
@@ -212,7 +255,7 @@ export default function PengaturanPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <Select value={u.role} onValueChange={(v) => { updateUser(u.id, { role: v as UserRole }); toast({ title: 'Role diperbarui' }); }}>
+                  <Select value={u.role} onValueChange={(v) => handleRoleChange(u, v as UserRole)}>
                     <SelectTrigger className={cn("h-8 w-[110px] text-[10px]",
                       u.role === 'owner' ? "text-gold font-bold" : u.role === 'admin' ? "text-sky-600" : "text-slate-500")}>
                       <SelectValue>{ROLE_LABEL[u.role]}</SelectValue>
@@ -223,12 +266,12 @@ export default function PengaturanPage() {
                   </Select>
                   <Switch
                     checked={u.active}
-                    onCheckedChange={(v) => { updateUser(u.id, { active: v }); toast({ title: v ? 'Anggota diaktifkan' : 'Anggota dinonaktifkan' }); }}
+                    onCheckedChange={(v) => handleActiveChange(u, v)}
                   />
                   <Button variant="ghost" size="icon" className="text-slate-400 h-8 w-8" onClick={() => openEdit(u)} aria-label="edit"><Pencil size={14} /></Button>
                   <Button
                     variant="ghost" size="icon" className="text-red-400 hover:text-red-500 h-8 w-8"
-                    onClick={() => { if (u.id === state.currentUserId) { toast({ title: 'Tidak bisa menghapus diri sendiri' }); return; } if (confirm(`Hapus user "${u.name}"?`)) { deleteUser(u.id); toast({ title: 'User dihapus' }); } }}
+                    onClick={() => handleDelete(u)}
                     aria-label="hapus"
                   >
                     <Trash2 size={14} />
@@ -330,7 +373,7 @@ export default function PengaturanPage() {
             <DialogTitle className="text-lg text-navy flex items-center gap-2">
               {editing ? <><Pencil size={16} /> Edit User</> : <><Plus size={16} /> Tambah User</>}
             </DialogTitle>
-            <DialogDescription className="text-xs text-slate-400">Kelola akun anggota tim BluDecor.</DialogDescription>
+            <DialogDescription className="text-xs text-slate-400">Kelola akun anggota tim BluDecor. Kredensial ini juga dipakai untuk login panel admin.</DialogDescription>
           </DialogHeader>
           <form onSubmit={submitUser} className="space-y-4">
             <div>
@@ -341,6 +384,22 @@ export default function PengaturanPage() {
               <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Username *</Label>
               <Input value={username} onChange={(e) => setUsername(e.target.value.replace(/\s/g, '').replace(/[^a-zA-Z0-9._-]/g, '').toLowerCase())} required className="mt-1" placeholder="cth. jimmy" autoComplete="off" />
               <p className="text-[9px] text-slate-300 mt-1 lowercase tracking-wide">Tanpa spasi. Hanya huruf, angka, titik, garis bawah.</p>
+            </div>
+            <div>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Password *</Label>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required={!editing}
+                minLength={6}
+                className="mt-1"
+                placeholder={editing ? 'Biarkan kosong jika tidak diganti' : 'Minimal 6 karakter'}
+                autoComplete="new-password"
+              />
+              <p className="text-[9px] text-slate-300 mt-1 lowercase tracking-wide">
+                {editing ? 'Isi hanya jika ingin mengganti password login.' : 'Password masuk ke /login (OPS) dan /admin (CMS). Minimal 6 karakter.'}
+              </p>
             </div>
             <div>
               <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Role</Label>
@@ -357,8 +416,10 @@ export default function PengaturanPage() {
               <p className="text-[9px] text-slate-300 mt-1 lowercase tracking-wide">Harus diawali 08 atau 628, hanya angka.</p>
             </div>
             <DialogFooter className="gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Batal</Button>
-              <Button type="submit" className="bg-navy hover:bg-gold text-white">{editing ? 'Simpan' : 'Tambah User'}</Button>
+              <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={saving}>Batal</Button>
+              <Button type="submit" className="bg-navy hover:bg-gold text-white" disabled={saving}>
+                {saving ? 'Menyimpan…' : (editing ? 'Simpan' : 'Tambah User')}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
