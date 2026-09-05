@@ -375,7 +375,7 @@ export default function DecorPage() {
 
       {/* ── Create / Edit dialog ──────────────────────────────────────────── */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="rounded-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="rounded-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="text-lg text-navy flex items-center gap-2">
               {editing ? <><Pencil size={16} /> Ubah Decor</> : <><Plus size={16} /> Tambah Decor</>}

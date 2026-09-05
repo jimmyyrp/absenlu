@@ -268,7 +268,8 @@ export default function PengeluaranPage() {
           ) : (
             <>
               {/* Desktop: tabel */}
-              <div className="hidden sm:block overflow-x-auto no-scrollbar">
+              <div className="hidden sm:block overflow-x-auto no-scrollbar rounded-lg border border-slate-100">
+                <div className="min-w-[500px]">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
@@ -309,6 +310,7 @@ export default function PengeluaranPage() {
                     </tr>
                   </tfoot>
                 </table>
+                </div>
               </div>
 
               {/* Mobile: daftar kartu sederhana */}
@@ -348,7 +350,7 @@ export default function PengeluaranPage() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="rounded-2xl max-w-md">
+        <DialogContent className="rounded-2xl max-w-md overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="text-lg text-navy flex items-center gap-2">{editing ? <><Pencil size={16} /> Edit Pengeluaran</> : <><Plus size={16} /> Tambah Pengeluaran</>}</DialogTitle>
             <DialogDescription className="text-xs text-slate-400">Catat biaya operasional BLUDECOR.</DialogDescription>

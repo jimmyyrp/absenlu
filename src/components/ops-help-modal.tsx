@@ -494,7 +494,7 @@ function AccordionItem({ title, children, defaultOpen = false }: {
   return (
     <div className="border border-slate-100 rounded-xl overflow-hidden">
       <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50 transition-colors">
-        <span className="text-sm font-bold text-navy">{title}</span>
+        <span className="text-sm font-bold text-navy truncate">{title}</span>
         <ChevronDown size={16} className={cn("text-slate-400 transition-transform shrink-0", open && "rotate-180")} />
       </button>
       {open && <div className="px-4 pb-4 pt-1 border-t border-slate-50">{children}</div>}
@@ -512,7 +512,7 @@ function ArticleCard({ article }: { article: HelpArticle }) {
           {article.icon}
         </div>
         <div className="min-w-0 flex-1">
-          <h4 className="text-sm font-headline font-bold text-navy">{article.title}</h4>
+          <h4 className="text-sm font-headline font-bold text-navy truncate">{article.title}</h4>
           <div className="flex flex-wrap gap-1 mt-1">
             {article.roles.map((r) => (
               <span key={r} className={cn("px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-widest", ROLE_COLORS[r])}>{r}</span>
@@ -527,9 +527,9 @@ function ArticleCard({ article }: { article: HelpArticle }) {
             <div key={idx} className="space-y-2">
               <h5 className="text-xs font-bold text-navy flex items-center gap-2">
                 <span className="h-4 w-4 rounded-full bg-navy text-white text-[8px] font-bold flex items-center justify-center shrink-0">{idx + 1}</span>
-                {section.title}
+                <span className="truncate">{section.title}</span>
               </h5>
-              {section.content && <p className="text-[11px] text-slate-600 leading-relaxed pl-6">{section.content}</p>}
+              {section.content && <p className="text-[11px] text-slate-600 leading-relaxed pl-6 whitespace-pre-wrap">{section.content}</p>}
               {section.steps && section.steps.length > 0 && (
                 <ol className="space-y-1.5 pl-6">
                   {section.steps.map((step, si) => (
@@ -624,13 +624,12 @@ const isOwnerOrDeveloper = currentUser.role === 'owner' || currentUser.role === 
 
   if (!open) return null;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-8 md:pt-16">
+  return (      <div className="fixed inset-0 z-[100] flex items-start justify-center pt-8 md:pt-16 overflow-hidden">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => onOpenChange(false)} />
 
       {/* Modal */}
-      <div className="relative w-full max-w-3xl mx-4 max-h-[85vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-3xl mx-4 max-h-[85vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200" style={{ minWidth: 0, maxWidth: '100vw' }}>
         {/* Header */}
         <div className="shrink-0 bg-gradient-to-r from-[#0B2447] to-[#19376D] p-5 text-white">
           <div className="flex items-center justify-between mb-4">
@@ -675,7 +674,7 @@ const isOwnerOrDeveloper = currentUser.role === 'owner' || currentUser.role === 
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-3">
           {filteredArticles.length === 0 ? (
             <div className="text-center py-10">
               <Search size={24} className="mx-auto text-slate-300 mb-2" />
@@ -707,7 +706,8 @@ const isOwnerOrDeveloper = currentUser.role === 'owner' || currentUser.role === 
             <h4 className="text-xs font-black uppercase tracking-widest text-navy mb-3 flex items-center gap-2">
               <Shield size={13} /> Hak Akses per Role
             </h4>
-            <div className="overflow-x-auto no-scrollbar">
+            <div className="overflow-x-auto no-scrollbar rounded-lg border border-slate-100">
+              <div className="min-w-[400px]">
               <table className="w-full text-left">
                 <thead>
                   <tr className="text-[8px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
@@ -739,6 +739,7 @@ const isOwnerOrDeveloper = currentUser.role === 'owner' || currentUser.role === 
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
 
@@ -747,7 +748,7 @@ const isOwnerOrDeveloper = currentUser.role === 'owner' || currentUser.role === 
             <Lightbulb size={18} className="text-gold shrink-0 mt-0.5" />
             <div>
               <h5 className="text-xs font-bold text-navy">Butuh Bantuan Lebih Lanjut?</h5>
-              <p className="text-[11px] text-slate-500 mt-0.5">Hubungi Owner atau Admin tim Anda untuk bantuan teknis atau pembuatan akun baru.</p>
+              <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">Hubungi Owner atau Admin tim Anda untuk bantuan teknis atau pembuatan akun baru.</p>
             </div>
           </div>
         </div>

@@ -84,12 +84,12 @@ export default function AnalisaPage() {
 
       {/* Insights */}
       {insights.length > 0 && (
-        <SectionCard className="mb-4" title={<span className="flex items-center gap-2"><Lightbulb size={14} /> Insight Otomatis</span>}>
-          <ul className="space-y-2.5">
+        <SectionCard className="mb-4" title={<span className="flex items-center gap-2"><Lightbulb size={12} /> Insight Otomatis</span>}>
+          <ul className="space-y-2">
             {insights.map((ins, i) => (
-              <li key={i} className="flex items-start gap-3 text-sm text-slate-700">
-                <span className={ins.up === false ? "text-red-500 mt-0.5" : "text-gold mt-0.5"}>{iconMap[ins.icon]}</span>
-                <span>{ins.text}</span>
+              <li key={i} className="flex items-start gap-2 text-xs sm:text-sm text-slate-700">
+                <span className={cn("shrink-0 mt-0.5", ins.up === false ? "text-red-500" : "text-gold")}>{iconMap[ins.icon]}</span>
+                <span className="truncate">{ins.text}</span>
               </li>
             ))}
           </ul>
@@ -98,8 +98,9 @@ export default function AnalisaPage() {
 
       {/* Performance table */}
       <SectionCard title="Performa Bulanan" className="mb-4">
-        <div className="hidden overflow-x-auto no-scrollbar sm:block">
-          <table className="w-full min-w-[600px] text-left">
+        <div className="hidden overflow-x-auto no-scrollbar sm:block rounded-lg border border-slate-100">
+          <div className="min-w-[600px]">
+          <table className="w-full text-left">
             <thead>
               <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
                 <th className="sticky left-0 z-10 bg-white py-2 pr-3">Indikator</th>
@@ -113,6 +114,7 @@ export default function AnalisaPage() {
               <PerfRow label="Profit" values={series.map((s) => formatIDRCompact(s.profit))} highlight />
             </tbody>
           </table>
+          </div>
         </div>
         <div className="space-y-2 sm:hidden">
           {([
@@ -139,23 +141,23 @@ export default function AnalisaPage() {
         </div>
       </SectionCard>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-        <StatCard icon={<CalendarRange size={18} />} label="Decor (bulan ini)" value={cur?.decor || 0} sub={`${statsChange(decorPct)} vs bulan lalu`} tone="navy" />
-        <StatCard icon={<Wallet size={18} />} label="Profit" value={formatIDRCompact(cur?.profit || 0)} sub={formatIDR(cur?.profit || 0)} tone="green" />
-        <StatCard icon={<Clock4 size={18} />} label="Jam Kerja" value={`${Math.floor((cur?.hours || 0) / 60)} jam`} sub={formatDuration(cur?.hours || 0).label} tone="gold" />
-        <StatCard icon={<Users size={18} />} label="Crew Aktif" value={activeMonthUsers} sub={`dari ${totalCrew} anggota`} tone="sky" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        <StatCard icon={<CalendarRange size={16} />} label="Decor (bulan ini)" value={cur?.decor || 0} sub={`${statsChange(decorPct)} vs bulan lalu`} tone="navy" className="sm\:p-3" />
+        <StatCard icon={<Wallet size={16} />} label="Profit" value={formatIDRCompact(cur?.profit || 0)} sub={formatIDR(cur?.profit || 0)} tone="green" className="sm\:p-3" />
+        <StatCard icon={<Clock4 size={16} />} label="Jam Kerja" value={`${Math.floor((cur?.hours || 0) / 60)} jam`} sub={formatDuration(cur?.hours || 0).label} tone="gold" className="sm\:p-3" />
+        <StatCard icon={<Users size={16} />} label="Crew Aktif" value={activeMonthUsers} sub={`dari ${totalCrew} anggota`} tone="sky" className="sm\:p-3" />
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <SectionCard title="Omzet vs Pengeluaran (6 Bulan)">
-          <div className="h-56">
+          <div className="h-48 sm:h-56">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={series}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="#cbd5e1" />
-                <YAxis tickFormatter={(v) => `${Math.round(v / 1000000)}jt`} tick={{ fontSize: 10 }} stroke="#cbd5e1" width={38} />
-                <Tooltip formatter={(v: number) => formatIDR(v)} />
-                <Legend wrapperStyle={{ fontSize: 10 }} />
+                <XAxis dataKey="month" tick={{ fontSize: 9 }} stroke="#cbd5e1" />
+                <YAxis tickFormatter={(v) => `${Math.round(v / 1000000)}jt`} tick={{ fontSize: 9 }} stroke="#cbd5e1" width={38} />
+                <Tooltip formatter={(v: number) => formatIDR(v)} contentStyle={{ fontSize: 10 }} />
+                <Legend wrapperStyle={{ fontSize: 9 }} />
                 <Bar dataKey="revenue" name="Omzet" fill="#0B2447" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="expenses" name="Pengeluaran" fill="#C5A358" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -164,13 +166,13 @@ export default function AnalisaPage() {
         </SectionCard>
 
         <SectionCard title="Profit (6 Bulan)">
-          <div className="h-56">
+          <div className="h-48 sm:h-56">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={series}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="month" tick={{ fontSize: 10 }} stroke="#cbd5e1" />
-                <YAxis tickFormatter={(v) => `${Math.round(v / 1000000)}jt`} tick={{ fontSize: 10 }} stroke="#cbd5e1" width={38} />
-                <Tooltip formatter={(v: number) => formatIDR(v)} />
+                <XAxis dataKey="month" tick={{ fontSize: 9 }} stroke="#cbd5e1" />
+                <YAxis tickFormatter={(v) => `${Math.round(v / 1000000)}jt`} tick={{ fontSize: 9 }} stroke="#cbd5e1" width={38} />
+                <Tooltip formatter={(v: number) => formatIDR(v)} contentStyle={{ fontSize: 10 }} />
                 <Line type="monotone" dataKey="profit" name="Profit" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3 }} />
               </LineChart>
             </ResponsiveContainer>

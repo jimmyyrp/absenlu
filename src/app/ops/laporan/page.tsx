@@ -153,7 +153,8 @@ export default function LaporanPage() {
                 {totalDuration.h} <span className="text-base text-slate-400">jam {totalDuration.m} menit</span>
               </p>
             </div>
-            <div className="hidden sm:block overflow-x-auto no-scrollbar">
+            <div className="hidden sm:block overflow-x-auto no-scrollbar rounded-lg border border-slate-100">
+              <div className="min-w-[400px]">
               <table className="w-full text-left">
                 <thead>
                   <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
@@ -172,6 +173,7 @@ export default function LaporanPage() {
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
             <div className="sm:hidden space-y-2">
               {crewAct.map(({ u, hours, acts }) => (
@@ -194,7 +196,8 @@ export default function LaporanPage() {
           <p className="text-xs text-slate-400 py-6 text-center">Tidak ada decor pada bulan ini.</p>
         ) : (
           <>
-          <div className="hidden sm:block overflow-x-auto no-scrollbar">
+          <div className="hidden sm:block overflow-x-auto no-scrollbar rounded-lg border border-slate-100">
+            <div className="min-w-[550px]">
             <table className="w-full text-left">
               <thead>
                 <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
@@ -219,9 +222,9 @@ export default function LaporanPage() {
                     <td className={cnProfit(fin.profit)}>{formatIDR(fin.profit)}</td>
                     <td className="py-2.5 text-right text-sm font-bold text-navy">{fin.margin}%</td>
                   </tr>
-                ))}
-              </tbody>
+                ))}                </tbody>
             </table>
+            </div>
           </div>
           <div className="sm:hidden space-y-2.5">
             {perDecor.map(({ decor, fin }) => (

@@ -608,7 +608,7 @@ export default function AbsensiPage() {
           }
         }}
       >
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="text-base text-navy">
               Konfirmasi absen {confirmAttendance?.mode}
@@ -647,7 +647,7 @@ export default function AbsensiPage() {
       </Dialog>
 
       <Dialog open={showNoWork} onOpenChange={setShowNoWork}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="text-base text-navy">Tidak Bekerja Hari Ini</DialogTitle>
             <DialogDescription className="text-xs text-slate-400">Konfirmasi bahwa Anda tidak bekerja hari ini.</DialogDescription>

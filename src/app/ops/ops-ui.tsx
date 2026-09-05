@@ -7,13 +7,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-
-export function PageHeader({
-  title,
-  subtitle,
-  action,
-  backTo,
+} from '@/components/ui/alert-dialog';export function PageHeader({
+  title, subtitle, action, backTo,
 }: {
   title: string;
   subtitle?: string;
@@ -21,29 +16,30 @@ export function PageHeader({
   backTo?: string;
 }) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
-      <div>
+    <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
+      <div className="min-w-0">
         {backTo && (
-          <Link href={backTo} className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-navy mb-2">
-            <ChevronLeft size={13} /> Kembali
+          <Link href={backTo} className="inline-flex items-center gap-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-navy mb-1">
+            <ChevronLeft size={12} className="sm:size-3" /> Kembali
           </Link>
         )}
-        <h2 className="text-xl font-headline font-bold text-navy">{title}</h2>
-        {subtitle && <p className="text-xs text-slate-400 mt-1">{subtitle}</p>}
+        <h2 className="text-lg sm:text-xl font-headline font-bold text-navy truncate">{title}</h2>
+        {subtitle && <p className="text-[9px] sm:text-xs text-slate-400 mt-0.5 truncate">{subtitle}</p>}
       </div>
-      {action && <div className="shrink-0">{action}</div>}
+      {action && <div className="shrink-0 flex-shrink-0">{action}</div>}
     </div>
   );
 }
 
 export function StatCard({
-  label, value, sub, icon, tone = 'navy',
+  label, value, sub, icon, tone = 'navy', className,
 }: {
   label: string;
   value: React.ReactNode;
   sub?: React.ReactNode;
   icon?: React.ReactNode;
   tone?: 'navy' | 'gold' | 'green' | 'red' | 'sky' | 'indigo';
+  className?: string;
 }) {
   const tones: Record<string, string> = {
     navy: 'bg-navy text-white',
@@ -54,17 +50,17 @@ export function StatCard({
     indigo: 'bg-indigo-500 text-white',
   };
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 p-4 shadow-sm">
-      <div className="flex items-center gap-3">
+    <div className={cn("bg-white rounded-2xl border border-slate-100 p-4 shadow-sm", className)}>
+      <div className="flex items-center gap-2.5 sm:gap-3">
         {icon && (
-          <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center shrink-0", tones[tone])}>
-            {icon}
+          <div className={cn("h-8 w-8 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center shrink-0", tones[tone])}>
+            <span className="sm:w-5 sm:h-5">{icon}</span>
           </div>
         )}
-        <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</p>
-          <p className="text-xl font-headline font-bold text-navy leading-tight">{value}</p>
-          {sub && <p className="text-[10px] text-slate-400 mt-0.5">{sub}</p>}
+        <div className="min-w-0 flex-1">
+          <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</p>
+          <p className="text-lg sm:text-xl font-headline font-bold text-navy leading-tight truncate">{value}</p>
+          {sub && <p className="text-[9px] sm:text-[10px] text-slate-400 mt-0.5 truncate">{sub}</p>}
         </div>
       </div>
     </div>

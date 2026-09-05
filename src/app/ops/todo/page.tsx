@@ -137,7 +137,7 @@ export default function TodoPage() {
 
       {/* Modal: Tambah Langkah Kerja */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="text-navy">Tambah Langkah Kerja</DialogTitle>
             <DialogDescription className="text-sm text-slate-500">
