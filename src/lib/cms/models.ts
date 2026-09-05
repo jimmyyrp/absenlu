@@ -51,7 +51,7 @@ const UserSchema = new Schema(
     username: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     full_name: String,
-    role: { type: String, enum: ['developer', 'admin', 'staff'], default: 'staff' },
+    role: { type: String, enum: ['owner', 'developer', 'admin', 'staff'], default: 'staff' },
     ...timestampFields,
   },
   { _id: false },

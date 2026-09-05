@@ -1,0 +1,45 @@
+{
+  "site_settings": [
+    { "key": "phone", "value": "081266465639" },
+    { "key": "whatsapp", "value": "https://wa.me/628126645639" },
+    { "key": "instagram", "value": "https://instagram.com/bludecor.id" },
+    { "key": "tiktok", "value": "https://www.tiktok.com/@bludecor.id" },
+    { "key": "address", "value": "Kota Padang, Sumatera Barat" },
+    { "key": "message", "value": "Halo BluDecor, saya ingin konsultasi mengenai rencana event saya..." },
+    { "key": "app_name", "value": "BluDecor" },
+    { "key": "app_tagline", "value": "Arsitek Event Premium" }
+  ],
+  "categories": [
+    { "name": "Lamaran" },
+    { "name": "Ulang Tahun" },
+    { "name": "Aqiqah" },
+    { "name": "Grand Opening" },
+    { "name": "Pernikahan" },
+    { "name": "Khitanan" },
+    { "name": "Anniversary" },
+    { "name": "Corporate & Branding" },
+    { "name": "Baby Shower" }
+  ],
+  "sub_categories": [
+    { "name": "Indoor", "category": "Lamaran", "price": 4500000 },
+    { "name": "Outdoor Taman", "category": "Lamaran", "price": 6500000 },
+    { "name": "Theme Klasik", "category": "Ulang Tahun", "price": 4000000 },
+    { "name": "Theme Modern", "category": "Ulang Tahun", "price": 5000000 },
+    { "name": "Penutup Aqiqah", "category": "Aqiqah", "price": 3500000 },
+    { "name": "Catering Corner", "category": "Aqiqah", "price": 2800000 },
+    { "name": "Backdrop Wall", "category": "Grand Opening", "price": 3000000 },
+    { "name": "Meja & Kursi Set", "category": "Grand Opening", "price": 2000000 },
+    { "name": "Sengkuang", "category": "Pernikahan", "price": 8500000 },
+    { "name": "Dekorasi Panggung", "category": "Pernikahan", "price": 12000000 },
+    { "name": "Riasan & Konsep", "category": "Pernikahan", "price": 2500000 },
+    { "name": "Stationery", "category": "Pernikahan", "price": 1500000 }
+  ],
+  "themes": [
+    { "name": "Classic" },
+    { "name": "Modern" },
+    { "name": "Minimalis" },
+    { "name": "Garden" },
+    { "name": "Royal" },
+    { "name": "Rustic" }
+  ]
+}

@@ -6,6 +6,7 @@ import {
   SiteSettingModel, PostModel, EventModel, TestimonialModel, MediaModel,
   nextId, setCounter,
 } from './models';
+import seedData from './seed-data.json';
 
 /**
  * CMS Service — semua operasi data situs menggantikan Supabase RPC/REST.
@@ -51,49 +52,84 @@ export async function ensureConnected() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SEED AWAL — hanya berjalan saat database benar-benar kosong (tabel users).
+// SEED AWAL — data referensi (kategori/sub/theme/setting) + bootstrap admin.
+// Akun admin BOLEH muncul hanya dari variabel lingkungan (SEED_ADMIN_*),
+// BUKAN hardcoded di dalam kode. Data user selebihnya impor dari database
+// (Supabase) atau dibuat lewat halaman /admin/users.
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function ensureSeed(): Promise<void> {
+async function seedReferenceData(): Promise<void> {
+  const catCount = await CategoryModel.countDocuments();
+  if (catCount === 0) {
+    const byName: Record<string, number> = {};
+    for (const c of seedData.categories) {
+      const id = await nextId('categories');
+      byName[c.name] = id;
+      await CategoryModel.create({ id, name: c.name });
+    }
+    for (const sc of seedData.sub_categories) {
+      const categoryId = byName[sc.category];
+      if (!categoryId) continue;
+      await SubCategoryModel.create({ id: await nextId('sub_categories'), name: sc.name, category_id: categoryId, price: sc.price });
+    }
+    await setCounter('categories', seedData.categories.length);
+    await setCounter('sub_categories', seedData.sub_categories.length);
+  }
+
+  if ((await SubCategoryModel.countDocuments()) === 0) {
+    const cats = await CategoryModel.find({}).lean();
+    const byName: Record<string, number> = {};
+    for (const c of cats) byName[c.name] = c.id;
+    for (const sc of seedData.sub_categories) {
+      const categoryId = byName[sc.category];
+      if (!categoryId) continue;
+      await SubCategoryModel.create({ id: await nextId('sub_categories'), name: sc.name, category_id: categoryId, price: sc.price });
+    }
+    await setCounter('sub_categories', seedData.sub_categories.length);
+  }
+
+  if ((await ThemeModel.countDocuments()) === 0) {
+    for (const t of seedData.themes) {
+      await ThemeModel.create({ id: await nextId('themes'), name: t.name });
+    }
+    await setCounter('themes', seedData.themes.length);
+  }
+
+  if ((await SiteSettingModel.countDocuments()) === 0) {
+    for (const s of seedData.site_settings) {
+      await SiteSettingModel.create({ id: await nextId('site_settings'), key: s.key, value: s.value });
+    }
+    await setCounter('site_settings', seedData.site_settings.length);
+  }
+}
+
+async function seedAdminFromEnv(): Promise<void> {
   const count = await UserModel.countDocuments();
   if (count > 0) return;
 
-  const seedUsers: [string, string, string, string][] = [
-    ['dev', 'dev123', 'System Developer', 'developer'],
-    ['admin', 'blu123', 'Administrator Utama', 'admin'],
-    ['staff', 'staff123', 'Content Staff', 'staff'],
-  ];
-  for (const [username, password, fullName, role] of seedUsers) {
-    await UserModel.create({
-      id: await nextId('users'),
-      username,
-      password: bcrypt.hashSync(password, 10),
-      full_name: fullName,
-      role,
-    });
+  const password = process.env.SEED_ADMIN_PASSWORD;
+  if (!password) {
+    console.warn('[cms] User kosong & SEED_ADMIN_PASSWORD belum diatur — lewati bootstrap akun (' +
+      'atur env SEED_ADMIN_PASSWORD lalu jalankan npm run db:seed, atau impor dari Supabase).');
+    return;
   }
 
-  const seedSettings: [string, string][] = [
-    ['phone', '081266465639'],
-    ['whatsapp', 'https://wa.me/628126645639'],
-    ['instagram', 'https://instagram.com/bludecor.id'],
-    ['tiktok', 'https://www.tiktok.com/@bludecor.id'],
-    ['address', 'Kota Padang, Sumatera Barat'],
-    ['message', 'Halo BluDecor, saya ingin konsultasi mengenai rencana event saya...'],
-    ['app_name', 'BluDecor'],
-    ['app_tagline', 'Arsitek Event Premium'],
-  ];
-  for (const [key, value] of seedSettings) {
-    await SiteSettingModel.create({ id: await nextId('site_settings'), key, value });
-  }
+  const username = String(process.env.SEED_ADMIN_USERNAME || 'admin').trim().toLowerCase();
+  const fullName = String(process.env.SEED_ADMIN_NAME || 'Administrator').trim();
+  const role = String(process.env.SEED_ADMIN_ROLE || 'owner').trim();
+  await UserModel.create({
+    id: await nextId('users'),
+    username,
+    password: bcrypt.hashSync(password, 10),
+    full_name: fullName,
+    role: ['owner', 'developer', 'admin', 'staff'].includes(role) ? role : 'owner',
+  });
+  await setCounter('users', 1);
+}
 
-  for (const name of ['Lamaran', 'Ulang Tahun', 'Aqiqah', 'Grand Opening']) {
-    await CategoryModel.create({ id: await nextId('categories'), name });
-  }
-
-  await setCounter('users', seedUsers.length);
-  await setCounter('site_settings', seedSettings.length);
-  await setCounter('categories', 4);
+async function ensureSeed(): Promise<void> {
+  await seedReferenceData();
+  await seedAdminFromEnv();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

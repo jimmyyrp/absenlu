@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
-  Users, Plus, Trash2, Loader2, Search, ChevronLeft, ChevronRight, AlertTriangle, UserX, ShieldCheck, Terminal, Eye, EyeOff
+  Users, Plus, Trash2, Loader2, Search, ChevronLeft, ChevronRight, AlertTriangle, UserX, ShieldCheck, Terminal, Eye, EyeOff, Crown
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -119,8 +119,11 @@ export default function UsersAdmin() {
       toast({ variant: "destructive", title: "Ditolak", description: "Anda tidak dapat menghapus akun yang sedang digunakan." });
       return false;
     }
-    if (targets.some(u => u.role === 'developer') && currentUserRole !== 'developer') {
-      toast({ variant: "destructive", title: "Ditolak", description: "Hanya developer yang dapat menghapus akun developer." });
+    if (
+      targets.some(u => u.role === 'developer' || u.role === 'owner') &&
+      !(currentUserRole === 'developer' || currentUserRole === 'owner')
+    ) {
+      toast({ variant: "destructive", title: "Ditolak", description: "Hanya owner/developer yang dapat menghapus akun owner/developer." });
       return false;
     }
     return true;
@@ -218,10 +221,12 @@ export default function UsersAdmin() {
                 </div>
                 <div className="flex items-center justify-between pt-3 border-t border-slate-50">
                   <span className={cn("px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-[0.2em] border flex items-center gap-1.5", 
+                    u.role === 'owner' ? "bg-red-50 text-red-600 border-red-100" : 
                     u.role === 'developer' ? "bg-purple-50 text-purple-600 border-purple-100" : 
                     u.role === 'admin' ? "bg-gold/10 text-gold border-gold/10" : 
                     "bg-blue-50 text-blue-600 border-blue-100"
                   )}>
+                    {u.role === 'owner' && <Crown size={10} />}
                     {u.role === 'developer' && <Terminal size={10} />}
                     {u.role === 'admin' && <ShieldCheck size={10} />}
                     {u.role.toUpperCase()}
@@ -256,10 +261,12 @@ export default function UsersAdmin() {
                     <TableCell className="py-3 font-mono text-[10px] text-slate-400">@{u.username}</TableCell>
                     <TableCell className="py-3 text-center">
                       <span className={cn("px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-[0.2em] border flex items-center justify-center gap-1.5 mx-auto w-fit whitespace-nowrap", 
+                        u.role === 'owner' ? "bg-red-50 text-red-600 border-red-50" : 
                         u.role === 'developer' ? "bg-purple-50 text-purple-600 border-purple-50" : 
                         u.role === 'admin' ? "bg-gold/10 text-gold border-gold/10" : 
                         "bg-blue-50 text-blue-600 border-blue-50"
                       )}>
+                        {u.role === 'owner' && <Crown size={10} />}
                         {u.role === 'developer' && <Terminal size={10} />}
                         {u.role === 'admin' && <ShieldCheck size={10} />}
                         {u.role.toUpperCase()}
@@ -327,7 +334,10 @@ export default function UsersAdmin() {
                 <SelectContent className="rounded-xl border-none shadow-5xl p-1.5 bg-white z-[1100] max-h-[40vh]">
                   <SelectItem value="staff" className="text-[10px] font-bold uppercase py-2.5 rounded-lg hover:bg-slate-50">CONTENT STAFF</SelectItem>
                   <SelectItem value="admin" className="text-[10px] font-bold uppercase py-2.5 rounded-lg hover:bg-slate-50 text-gold">SUPER ADMIN</SelectItem>
-                  {currentUserRole === 'developer' && (
+                  {(currentUserRole === 'developer' || currentUserRole === 'owner') && (
+                    <SelectItem value="owner" className="text-[10px] font-bold uppercase py-2.5 rounded-lg hover:bg-slate-50 text-red-600">OWNER</SelectItem>
+                  )}
+                  {(currentUserRole === 'developer' || currentUserRole === 'owner') && (
                     <SelectItem value="developer" className="text-[10px] font-bold uppercase py-2.5 rounded-lg hover:bg-slate-50 text-purple-600">SYSTEM DEVELOPER</SelectItem>
                   )}
                 </SelectContent>
