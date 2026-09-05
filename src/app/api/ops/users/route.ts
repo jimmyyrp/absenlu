@@ -18,6 +18,7 @@ export const dynamic = 'force-dynamic';
 
 function opsToCmsRole(role: string): string | null {
   if (role === 'owner') return 'owner';
+  if (role === 'developer') return 'developer';
   if (role === 'admin') return 'admin';
   if (role === 'crew') return 'staff';
   return null;
@@ -34,7 +35,7 @@ async function verifyOwner(actor: string): Promise<string | null> {
   if (!username) return null;
   await connectDB();
   const user = await UserModel.findOne({ username, deleted_at: null }).lean();
-  return user?.role === 'owner' ? username : null;
+  return (user?.role === 'owner' || user?.role === 'developer') ? username : null;
 }
 
 export async function POST(request: Request) {
@@ -114,7 +115,7 @@ export async function POST(request: Request) {
       const patch: Record<string, any> = {};
       if (name) patch.full_name = name;
       if (role) {
-        if (target.username === owner && role !== 'owner') {
+        if (target.username === owner && role !== 'owner' && role !== 'developer') {
           return NextResponse.json({ error: 'Tidak bisa menurunkan peran akun Anda sendiri.' }, { status: 400 });
         }
         patch.role = role;
@@ -153,10 +154,11 @@ export async function POST(request: Request) {
     if (targetUser.username === owner) {
       return NextResponse.json({ error: 'Tidak bisa menghapus akun Anda sendiri.' }, { status: 400 });
     }
-    if (targetUser.role === 'owner') {
+    if (targetUser.role === 'owner' || targetUser.role === 'developer') {
       const ownerCount = await UserModel.countDocuments({ role: 'owner', deleted_at: null });
-      if (ownerCount <= 1) {
-        return NextResponse.json({ error: 'Tidak bisa menghapus owner terakhir.' }, { status: 400 });
+      const devCount = await UserModel.countDocuments({ role: 'developer', deleted_at: null });
+      if (ownerCount <= 1 && devCount <= 1) {
+        return NextResponse.json({ error: 'Tidak bisa menghapus akun owner/developer terakhir.' }, { status: 400 });
       }
     }
     await UserModel.deleteOne({ id: targetUser.id });

@@ -586,10 +586,13 @@ export function OpsHelpModal({ open, onOpenChange }: { open: boolean; onOpenChan
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<HelpTab>('all');
 
-  const isManager = currentUser.role === 'owner' || currentUser.role === 'admin';
+  const isManager = currentUser.role === 'owner' || currentUser.role === 'admin' || currentUser.role === 'developer';
+const isOwnerOrDeveloper = currentUser.role === 'owner' || currentUser.role === 'developer';
 
   const filteredArticles = useMemo(() => {
-    let articles = ARTICLES.filter((a) => a.roles.includes(currentUser.role));
+    // Developer gets same access as owner
+    const effectiveRole = currentUser.role === 'developer' ? 'owner' : currentUser.role;
+    let articles = ARTICLES.filter((a) => a.roles.includes(effectiveRole));
     if (activeTab !== 'all') {
       const tabMap: Record<string, string> = {
         mulai: 'memulai', decor: 'decor', tugas: 'tugas', absensi: 'absensi',
@@ -615,9 +618,9 @@ export function OpsHelpModal({ open, onOpenChange }: { open: boolean; onOpenChan
   }, [currentUser.role, activeTab, search]);
 
   const visibleTabs = useMemo(() => {
-    if (isManager) return HELP_TABS;
+    if (isManager || isOwnerOrDeveloper) return HELP_TABS;
     return HELP_TABS.filter((t) => !['keuangan', 'laporan', 'analisa', 'pengaturan'].includes(t.value));
-  }, [isManager]);
+  }, [isManager, isOwnerOrDeveloper]);
 
   if (!open) return null;
 

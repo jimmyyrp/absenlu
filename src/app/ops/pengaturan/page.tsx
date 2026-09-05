@@ -22,7 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { UserRole } from '@/lib/ops/types';
 import type { OpsUser } from '@/lib/ops/types';
 
-const ROLE_LABEL: Record<UserRole, string> = { owner: 'Owner', admin: 'Admin', crew: 'Crew' };
+const ROLE_LABEL: Record<UserRole, string> = { owner: 'Owner', admin: 'Admin', developer: 'Developer', crew: 'Crew' };
 
 const TAB_LIST = [
   { value: 'tim', label: 'Tim & Akses', icon: Users },
@@ -158,9 +158,9 @@ export default function PengaturanPage() {
       <PageHeader title="Pengaturan" subtitle="Kelola user, kategori pekerjaan, dan konfigurasi sistem" />
 
       {/* Permission note */}
-      {currentUser.role !== 'owner' && (
+      {currentUser.role !== 'owner' && currentUser.role !== 'developer' && (
         <div className="mb-4 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-700 font-semibold">
-          Mode demo: saat ini bertindak sebagai {currentUser.name} ({ROLE_LABEL[currentUser.role]}). Hanya Owner yang dapat mengubah pengaturan.
+          Mode demo: saat ini bertindak sebagai {currentUser.name} ({ROLE_LABEL[currentUser.role]}). Hanya Owner/Developer yang dapat mengubah pengaturan.
         </div>
       )}
 
@@ -202,7 +202,7 @@ export default function PengaturanPage() {
                   </div>
                   <span className={cn(
                     "px-2 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-wider shrink-0",
-                    u.role === 'owner' ? "bg-gold/10 text-gold border border-gold/20" : u.role === 'admin' ? "bg-sky-50 text-sky-600 border border-sky-100" : "bg-slate-50 text-slate-500 border border-slate-100"
+                    u.role === 'owner' ? "bg-gold/10 text-gold border border-gold/20" : u.role === 'developer' ? "bg-purple-50 text-purple-600 border border-purple-100" : u.role === 'admin' ? "bg-sky-50 text-sky-600 border border-sky-100" : "bg-slate-50 text-slate-500 border border-slate-100"
                   )}>{ROLE_LABEL[u.role]}</span>
                 </div>
 
@@ -218,7 +218,7 @@ export default function PengaturanPage() {
                         <SelectValue>{ROLE_LABEL[u.role]}</SelectValue>
                       </SelectTrigger>
                       <SelectContent>
-                        {(['owner', 'admin', 'crew'] as UserRole[]).map((r) => <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>)}
+                        {(['owner', 'admin', 'developer', 'crew'] as UserRole[]).map((r) => <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>)}
                       </SelectContent>
                     </Select>
                     <div className="flex items-center gap-1.5">
@@ -261,14 +261,13 @@ export default function PengaturanPage() {
                 <div className="flex items-center gap-2 shrink-0">
                   <Select value={u.role} onValueChange={(v) => handleRoleChange(u, v as UserRole)}>
                     <SelectTrigger className={cn("h-8 w-[110px] text-[10px]",
-                      u.role === 'owner' ? "text-gold font-bold" : u.role === 'admin' ? "text-sky-600" : "text-slate-500")}>
+                      u.role === 'owner' ? "text-gold font-bold" : u.role === 'developer' ? "text-purple-600 font-bold" : u.role === 'admin' ? "text-sky-600" : "text-slate-500")}>
                       <SelectValue>{ROLE_LABEL[u.role]}</SelectValue>
                     </SelectTrigger>
-                    <SelectContent>
-                      {(['owner', 'admin', 'crew'] as UserRole[]).map((r) => <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <Switch
+                    <SelectContent>                      {(['owner', 'admin', 'developer', 'crew'] as UserRole[]).map((r) => <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Switch
                     checked={u.active}
                     onCheckedChange={(v) => handleActiveChange(u, v)}
                   />
@@ -410,7 +409,7 @@ export default function PengaturanPage() {
               <Select value={role} onValueChange={(v) => setRole(v as UserRole)}>
                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {(['owner', 'admin', 'crew'] as UserRole[]).map((r) => <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>)}
+                  {(['owner', 'admin', 'developer', 'crew'] as UserRole[]).map((r) => <SelectItem key={r} value={r}>{ROLE_LABEL[r]}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

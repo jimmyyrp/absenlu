@@ -10,7 +10,7 @@ import { OpsProvider, useOps } from '@/lib/ops/store';
 import { DECOR_STATUS_COLOR } from '@/lib/ops/types';
 import {
   PRIMARY_NAV, CREW_PRIMARY_NAV, CREW_NAV, MANAGER_NAV, OWNER_NAV, SECONDARY_NAV,
-  isActivePath, isAllowedRoute,
+  isActivePath, isAllowedRoute, isOwnerOrDeveloper, isManagerOrDeveloper,
 } from './navigation';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -82,8 +82,8 @@ function BottomNav() {
   const pathname = usePathname();
   const { currentUser } = useOps();
   const isCrew = currentUser.role === 'crew';
-  const isManager = currentUser.role === 'owner' || currentUser.role === 'admin';
-  const isOwner = currentUser.role === 'owner';
+  const isManager = isManagerOrDeveloper(currentUser.role);
+  const isOwner = isOwnerOrDeveloper(currentUser.role);
 
   // Primary: always 5 items max for mobile
   const primaryItems = isCrew ? CREW_PRIMARY_NAV : PRIMARY_NAV;
@@ -182,14 +182,14 @@ function Shell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { currentUser, selectedDecor } = useOps();
   const [helpOpen, setHelpOpen] = useState(false);
-  const isOwner = currentUser.role === 'owner';
-  const isManager = currentUser.role === 'owner' || currentUser.role === 'admin';
+  const isOwner = isOwnerOrDeveloper(currentUser.role);
+  const isManager = isManagerOrDeveloper(currentUser.role);
 
   // Find title from all nav lists
   const allNav = [...OWNER_NAV];
   const title = allNav.find((n) => isActivePath(pathname, n.href))?.label || 'Dasbor';
 
-  // Route guards
+  // Route guards — developer gets full owner access
   const allowedRoutes = isOwner
     ? ['/ops', '/ops/decor', '/ops/todo', '/ops/absensi', '/ops/dokumentasi', '/ops/kegiatan', '/ops/analisa', '/ops/laporan', '/ops/pengeluaran', '/ops/pengaturan']
     : isManager

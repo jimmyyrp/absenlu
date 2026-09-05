@@ -17,7 +17,8 @@ export const dynamic = 'force-dynamic';
 
 function mapToOpsRole(cmsRole: string): OpsRole | null {
   if (cmsRole === 'owner') return 'owner';
-  if (cmsRole === 'developer' || cmsRole === 'admin') return 'admin';
+  if (cmsRole === 'developer') return 'developer';
+  if (cmsRole === 'admin') return 'admin';
   if (cmsRole === 'staff') return 'crew';
   return null;
 }

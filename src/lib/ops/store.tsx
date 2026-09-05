@@ -8,6 +8,14 @@ import type {
 } from './types';
 import { SEED_STATE } from './seed';
 import { opsUserId, opsRole, opsUsername, opsName, opsLogout } from './auth';
+
+function isOwnerOrDeveloper(role?: string): boolean {
+  return role === 'owner' || role === 'developer';
+}
+
+function isManagerOrDeveloper(role?: string): boolean {
+  return role === 'owner' || role === 'admin' || role === 'developer';
+}
 import { fetchOpsState, saveOpsState } from './api';
 
 // localStorage hanya cache offline. MongoDB (server) adalah sumber data utama.
@@ -236,8 +244,8 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
     () => state.decors.filter((d) => d.status !== 'selesai' && d.status !== 'dibatalkan'),
     [state.decors],
   );
-  const isOwner = currentUser?.role === 'owner';
-  const isManager = isOwner || currentUser?.role === 'admin';
+  const isOwner = isOwnerOrDeveloper(currentUser?.role);
+  const isManager = isManagerOrDeveloper(currentUser?.role);
 
   // Jangan render UI OPS sebelum user aktif ter-provision (users belum pasti
   // berisi apa-apa saat render pertama). Hindari crash baca `currentUser.role`.

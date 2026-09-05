@@ -38,3 +38,15 @@ export function isActivePath(pathname: string, href: string) {
 export function isAllowedRoute(pathname: string, routes: readonly string[]) {
   return routes.some((route) => route === '/ops' ? pathname === route : pathname === route || pathname.startsWith(`${route}/`));
 }
+
+export function isDeveloper(role: string): boolean {
+  return role === 'developer';
+}
+
+export function isOwnerOrDeveloper(role: string): boolean {
+  return role === 'owner' || role === 'developer';
+}
+
+export function isManagerOrDeveloper(role: string): boolean {
+  return role === 'owner' || role === 'admin' || role === 'developer';
+}

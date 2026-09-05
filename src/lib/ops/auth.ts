@@ -5,7 +5,7 @@ export const OPS_LASTLOGIN_KEY = 'bludecor_ops_lastlogin';
 export const OPS_ROLE_KEY = 'bludecor_ops_role';
 export const OPS_USERID_KEY = 'bludecor_ops_userid';
 
-export type OpsRole = 'owner' | 'admin' | 'crew';
+export type OpsRole = 'owner' | 'admin' | 'developer' | 'crew';
 
 /**
  * Auth OPS dinamis — username & password diverifikasi ke MongoDB (cmsusers)
@@ -14,7 +14,7 @@ export type OpsRole = 'owner' | 'admin' | 'crew';
  */
 
 export function roleLabel(role: OpsRole): string {
-  return role === 'owner' ? 'Owner' : role === 'admin' ? 'Admin' : 'Crew';
+  return role === 'owner' ? 'Owner' : role === 'developer' ? 'Developer' : role === 'admin' ? 'Admin' : 'Crew';
 }
 
 export async function opsLogin(username: string, password: string): Promise<OpsRole | null> {
@@ -77,7 +77,7 @@ export function opsUserId(): string | null {
 export function opsRole(): OpsRole | null {
   if (typeof window === 'undefined') return null;
   const r = localStorage.getItem(OPS_ROLE_KEY);
-  return r === 'owner' || r === 'admin' || r === 'crew' ? r : null;
+  return r === 'owner' || r === 'admin' || r === 'developer' || r === 'crew' ? r : null;
 }
 
 export function opsLastLogin(): string | null {
