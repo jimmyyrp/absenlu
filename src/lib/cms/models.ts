@@ -54,7 +54,6 @@ const UserSchema = new Schema(
     role: { type: String, enum: ['owner', 'developer', 'admin', 'staff'], default: 'staff' },
     ...timestampFields,
   },
-  { _id: false },
 );
 
 const CategorySchema = new Schema(
@@ -63,7 +62,6 @@ const CategorySchema = new Schema(
     name: { type: String, required: true },
     ...timestampFields,
   },
-  { _id: false },
 );
 
 const SubCategorySchema = new Schema(
@@ -74,7 +72,6 @@ const SubCategorySchema = new Schema(
     price: { type: Number, default: 0 },
     ...timestampFields,
   },
-  { _id: false },
 );
 
 const ThemeSchema = new Schema(
