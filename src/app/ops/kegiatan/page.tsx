@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react';
 import { ClipboardList } from 'lucide-react';
 import { useOps } from '@/lib/ops/store';
-import { PageHeader, SectionCard, EmptyState } from '../ops-ui';
+import { PageHeader, EmptyState } from '../ops-ui';
 
 export default function KegiatanPage() {
   const { selectedDecor, tasks } = useOps();
@@ -25,34 +25,30 @@ export default function KegiatanPage() {
       {!selectedDecor ? (
         <EmptyState icon={<ClipboardList size={20} />} title="Pilih decor terlebih dahulu" sub="Pilih decor dari menu Current Decor di bagian atas." />
       ) : (
-        <SectionCard
-          title={`Alur Pekerjaan — ${selectedDecor.name}`}
-          action={
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              {flowTasks.length} langkah
-            </span>
-          }
-        >
+        <div className="space-y-4">
           {flowTasks.length === 0 ? (
             <EmptyState icon={<ClipboardList size={20} />} title="Belum ada alur pekerjaan" sub="Manager dapat menambahkan langkah kerja dari halaman Tugas." />
           ) : (
-            <ol className="relative">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {flowTasks.map((t, idx) => (
-                <li key={t.id} className="relative flex items-start gap-4 pb-6 last:pb-0">
-                  {idx < flowTasks.length - 1 && (
-                    <span className="absolute left-[19px] top-10 bottom-0 w-px bg-slate-200" />
-                  )}
-                  <span className="relative z-10 mt-0.5 shrink-0 h-9 w-9 rounded-full flex items-center justify-center text-[12px] font-black border-2 bg-white border-slate-300 text-slate-400">
-                    {idx + 1}
-                  </span>
-                  <div className="flex-1 min-w-0 pt-1.5">
-                    <p className="text-base font-semibold leading-snug text-navy">{t.title}</p>
+                <div
+                  key={t.id}
+                  className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="relative z-10 mt-0.5 shrink-0 h-9 w-9 rounded-full flex items-center justify-center text-[12px] font-black border-2 bg-navy text-white">
+                      {idx + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-base font-semibold leading-snug text-navy">{t.title}</p>
+                      <p className="text-[10px] text-slate-400 mt-1">Langkah {idx + 1} dari {flowTasks.length}</p>
+                    </div>
                   </div>
-                </li>
+                </div>
               ))}
-            </ol>
+            </div>
           )}
-        </SectionCard>
+        </div>
       )}
     </div>
   );

@@ -131,8 +131,8 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ── 4 Quick Access Cards ──────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* ── 3 Quick Access Cards ──────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <QuickCard
           href="/ops/absensi"
           icon={<Clock4 size={28} />}
@@ -154,13 +154,17 @@ export default function DashboardPage() {
           sub={`${tasks.length} langkah`}
           color="bg-gold"
         />
-        <QuickCard
-          href="/ops/pengeluaran"
-          icon={<BarChart3 size={28} />}
-          label="Pengeluaran"
-          sub={isManager ? 'Catat biaya proses' : 'Khusus manajer'}
-          color="bg-sky-500"
-        />
+
+        {isManager && (
+          <QuickCard
+            href="/ops/pengeluaran"
+            icon={<BarChart3 size={28} />}
+            label="Pengeluaran"
+            sub={isManager ? 'Catat biaya proses' : 'Khusus manajer'}
+            color="bg-sky-500"
+          />
+        )}
+
       </div>
 
       {/* ── Owner: Financial Quick Stats ──────────────────────────────────── */}
