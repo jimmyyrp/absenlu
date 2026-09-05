@@ -43,7 +43,7 @@ async function nextId(counter, name) {
   const doc = await counter.findByIdAndUpdate(
     name,
     { $inc: { lastId: 1 } },
-    { upsert: true, new: true, setDefaultsOnInsert: true },
+    { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },
   ).lean();
   return doc?.lastId ?? 1;
 }

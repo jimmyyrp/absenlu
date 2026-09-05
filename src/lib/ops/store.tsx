@@ -236,8 +236,20 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
     () => state.decors.filter((d) => d.status !== 'selesai' && d.status !== 'dibatalkan'),
     [state.decors],
   );
-  const isOwner = currentUser.role === 'owner';
-  const isManager = isOwner || currentUser.role === 'admin';
+  const isOwner = currentUser?.role === 'owner';
+  const isManager = isOwner || currentUser?.role === 'admin';
+
+  // Jangan render UI OPS sebelum user aktif ter-provision (users belum pasti
+  // berisi apa-apa saat render pertama). Hindari crash baca `currentUser.role`.
+  if (!ready) {
+    return (
+      <div className="h-screen bg-[#0B2447] flex items-center justify-center">
+        <div className="text-gold font-bold text-sm uppercase tracking-[0.4em] animate-pulse">
+          BluDecor OPS
+        </div>
+      </div>
+    );
+  }
 
   const value: OpsContextValue = {
     state,

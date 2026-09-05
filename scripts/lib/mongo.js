@@ -45,6 +45,15 @@ async function resolveSeedlist(host) {
   }
 }
 
+/** Bagian host (tanpa kredensial) dari URI — dipakai untuk lookup SRV. */
+function srvHost(uri) {
+  try {
+    return new URL(uri).hostname;
+  } catch {
+    return null;
+  }
+}
+
 async function mongoUri() {
   loadEnv();
   const MONGODB_URI = process.env.MONGODB_URI || '';
@@ -53,13 +62,19 @@ async function mongoUri() {
   if (!MONGODB_URI.startsWith('mongodb+srv://')) return MONGODB_URI ? forceAuth(MONGODB_URI) : '';
 
   const schemeLen = 'mongodb+srv://'.length;
-  const at = MONGODB_URI.indexOf('@');
   const slash = MONGODB_URI.indexOf('/', schemeLen);
-  const host = slash !== -1 ? MONGODB_URI.slice(schemeLen, slash) : MONGODB_URI.slice(schemeLen);
-  const auth = at !== -1 ? MONGODB_URI.slice(schemeLen, at) : '';
-  const rest = slash !== -1 ? MONGODB_URI.slice(slash) : '';
+
+  const host = srvHost(MONGODB_URI);
+  if (!host) return forceAuth(MONGODB_URI);
   const seedlist = await resolveSeedlist(host);
   if (!seedlist.length) return forceAuth(MONGODB_URI);
+
+  let auth = '';
+  try {
+    const parsed = new URL(MONGODB_URI);
+    if (parsed.username) auth = `${decodeURIComponent(parsed.username)}:${decodeURIComponent(parsed.password)}`;
+  } catch {}
+  const rest = slash !== -1 ? MONGODB_URI.slice(slash) : '';
   const sep = rest.includes('?') ? '&' : '?';
   return `mongodb://${auth}@${seedlist.join(',')}${rest}${sep}tls=true&authSource=admin`;
 }
@@ -103,7 +118,7 @@ function counterModel() {
 }
 
 function nextId(collection) {
-  return counterModel().findByIdAndUpdate(collection, { $inc: { lastId: 1 } }, { upsert: true, new: true, setDefaultsOnInsert: true }).lean().then((d) => d.lastId);
+  return counterModel().findByIdAndUpdate(collection, { $inc: { lastId: 1 } }, { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }).lean().then((d) => d.lastId);
 }
 
 function setCounter(collection, value) {

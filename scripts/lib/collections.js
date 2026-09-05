@@ -25,7 +25,7 @@ module.exports = {
   POSTS: 'cmsposts',
   EVENTS: 'cmsevents',
   TESTIMONIALS: 'cmstestimonials',
-  MEDIA: 'cmsmedia',
+  MEDIA: 'cmsmedias',
   OPS_STATES: 'opsstates',
   COUNTERS: 'cmscounters',
   MIGRATIONS: 'migrations',
