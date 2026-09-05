@@ -90,6 +90,7 @@ export async function fetchOpsHealth(): Promise<OpsHealth | null> {
 export interface OpsAccountResult {
   ok: boolean;
   error?: string;
+  note?: string;
 }
 
 export interface OpsAccountInput {
@@ -110,7 +111,7 @@ async function opsAccountRequest(body: unknown): Promise<OpsAccountResult> {
     });
     const json = await res.json().catch(() => ({}));
     if (!res.ok) return { ok: false, error: json.error || 'Gagal memproses akun.' };
-    return { ok: true };
+    return { ok: true, error: json.error, note: json.note };
   } catch {
     return { ok: false, error: 'Tidak terhubung ke server.' };
   }

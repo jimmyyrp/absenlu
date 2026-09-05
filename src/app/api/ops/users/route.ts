@@ -92,7 +92,23 @@ export async function POST(request: Request) {
       if (!username) return NextResponse.json({ error: 'Username tidak valid.' }, { status: 400 });
       const target = await UserModel.findOne({ username }).lean();
       if (!target) {
-        return NextResponse.json({ error: 'Akun tidak ditemukan.' }, { status: 404 });
+        // Self-healing: OPS state mungkin menyimpan user yang belum pernah
+        // punya akun cmsusers (mis. dari alur lama tanpa password). Bila
+        // password disediakan, akun login dibuat sekarang; bila belum, aksi
+        // hanya memperbarui metadata OPS di sisi klien.
+        if (!password) {
+          return NextResponse.json({ ok: true, note: 'no-cms-account' });
+        }
+        if (password.length < 6) return NextResponse.json({ error: 'Password minimal 6 karakter.' }, { status: 400 });
+        const created = await UserModel.create({
+          id: await nextId('users'),
+          username,
+          password: bcrypt.hashSync(password, 10),
+          full_name: name || username,
+          role: role || 'staff',
+          deleted_at: typeof user.active === 'boolean' && user.active === false ? new Date() : null,
+        });
+        return NextResponse.json({ ok: true, note: 'cms-created', cmsId: created.id });
       }
 
       const patch: Record<string, any> = {};
@@ -131,7 +147,9 @@ export async function POST(request: Request) {
 
     // delete
     const targetUser = await UserModel.findOne({ username }).lean();
-    if (!targetUser) return NextResponse.json({ error: 'Akun tidak ditemukan.' }, { status: 404 });
+    if (!targetUser) {
+      return NextResponse.json({ ok: true, note: 'no-cms-account' });
+    }
     if (targetUser.username === owner) {
       return NextResponse.json({ error: 'Tidak bisa menghapus akun Anda sendiri.' }, { status: 400 });
     }

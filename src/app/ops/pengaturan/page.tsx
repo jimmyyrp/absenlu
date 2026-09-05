@@ -91,6 +91,10 @@ export default function PengaturanPage() {
       if (editing) {
         const res = await updateOpsAccount({ username: cleanUsername, name: cleanName, role, password: password.trim() || undefined });
         if (!res.ok) { toast({ title: 'Gagal memperbarui akun', description: res.error }); return; }
+        if (res.note === 'no-cms-account' && !password.trim()) {
+          toast({ title: 'Password belum dibuat', description: 'Akun ini belum punya login. Isi Password agar bisa masuk /login dan /admin.' });
+          return;
+        }
         updateUser(editing.id, { name: cleanName, username: cleanUsername, role, phone: phone.trim() || undefined });
         toast({ title: 'Anggota diperbarui' });
       } else {

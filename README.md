@@ -15,14 +15,14 @@ Platform profesional untuk jasa dekorasi dan party planner premium di Kota Padan
 
 Data hidup di **MongoDB Atlas**, database `bludecor`, dengan koleksi:
 
-| Collection | Isi |
-|---|---|
-| `cmsusers` | Akun admin & OPS (SINGLE SOURCE of truth untuk auth) |
-| `cmscategories`, `cmssubcategories`, `cmsthemes` | Katalog karya |
-| `cmsposts`, `cmsevents`, `cmstestimonials` | Konten situs |
-| `cmsmedia`, `cmssitesettings` | Media & pengaturan |
-| `opsstates` | Satu dokumen embedded untuk seluruh data modul OPS |
-| `migrations` | Riwayat migrasi yang sudah diterapkan |
+| Collection                                       | Isi                                                  |
+| ------------------------------------------------ | ---------------------------------------------------- |
+| `cmsusers`                                       | Akun admin & OPS (SINGLE SOURCE of truth untuk auth) |
+| `cmscategories`, `cmssubcategories`, `cmsthemes` | Katalog karya                                        |
+| `cmsposts`, `cmsevents`, `cmstestimonials`       | Konten situs                                         |
+| `cmsmedia`, `cmssitesettings`                    | Media & pengaturan                                   |
+| `opsstates`                                      | Satu dokumen embedded untuk seluruh data modul OPS   |
+| `migrations`                                     | Riwayat migrasi yang sudah diterapkan                |
 
 > Detail koleksi & field: lihat [`docs/SCHEMA.md`](docs/SCHEMA.md).
 
