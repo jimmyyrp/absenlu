@@ -142,7 +142,6 @@ const EventSchema = new Schema(
     is_active: { type: Boolean, default: true },
     ...timestampFields,
   },
-  { _id: false },
 );
 
 const TestimonialSchema = new Schema(
@@ -155,7 +154,6 @@ const TestimonialSchema = new Schema(
     token_used: String,
     ...timestampFields,
   },
-  { _id: false },
 );
 
 const MediaSchema = new Schema({
