@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { opsAuthed, opsLogout } from '@/lib/ops/auth';
+import { opsAuthed, opsLogout, opsName, opsRole, opsUsername } from '@/lib/ops/auth';
 import { RotateCcw, LogOut, HelpCircle, MoreHorizontal, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { OpsProvider, useOps } from '@/lib/ops/store';
@@ -20,6 +20,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 import { OpsHelpModal } from '@/components/ops-help-modal';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger,
@@ -50,27 +51,53 @@ function DecorSelector() {
 }
 
 function ResetButton() {
-  const { resetData } = useOps();
+  const { resetData, currentUser } = useOps();
   const [open, setOpen] = useState(false);
+  const [armed, setArmed] = useState(false);
+  const handleOpenChange = (o: boolean) => {
+    setOpen(o);
+    if (!o) setArmed(false);
+  };
   return (
     <>
       <Button variant="ghost" size="sm" className="text-slate-400 hover:text-red-500 text-[10px] uppercase tracking-widest" onClick={() => setOpen(true)}>
         <RotateCcw size={13} /> Reset
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="max-w-sm rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-base text-navy">Ulangi semua data?</DialogTitle>
             <DialogDescription className="text-sm text-slate-500">
-              Semua perubahan yang Anda simpan akan dihapus dan data kembali ke contoh awal.
+              Semua perubahan yang Anda simpan akan dihapus dan data kembali ke contoh awal. Tindakan ini tidak dapat dibatalkan.
             </DialogDescription>
           </DialogHeader>
+          {/* Info sesi sebelum reset */}
+          <div className="rounded-xl bg-slate-50 border border-slate-100 p-3 space-y-1.5">
+            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400">Informasi Sesi</p>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-400 font-bold uppercase tracking-widest">Pengguna</span>
+              <span className="font-black text-navy truncate max-w-[60%]">{currentUser.name}</span>
+            </div>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-slate-400 font-bold uppercase tracking-widest">Peran</span>
+              <span className="font-black text-navy uppercase">{currentUser.role}</span>
+            </div>
+            <p className="text-[10px] text-slate-400 pt-1 border-t border-slate-100">Seluruh decor, tugas, absensi, dan pengeluaran akan dikembalikan ke data contoh.</p>
+          </div>
+          {/* Dual confirm: langkah 1 konfirmasi niat, langkah 2 tombol merah aktif */}
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
-            <Button className="bg-red-500 hover:bg-red-600 text-white" onClick={() => { resetData(); setOpen(false); }}>
-              Ya, Ulangi
-            </Button>
+            <Button variant="outline" onClick={() => handleOpenChange(false)}>Batal</Button>
+            {!armed ? (
+              <Button variant="secondary" onClick={() => setArmed(true)}>
+                Ya, Lanjutkan
+              </Button>
+            ) : (
+              <Button className="bg-red-500 hover:bg-red-600 text-white" onClick={() => { resetData(); handleOpenChange(false); }}>
+                Ulangi Sekarang
+              </Button>
+            )}
           </DialogFooter>
+          <p className="text-[9px] text-slate-300 uppercase tracking-widest text-center -mt-1">Konfirmasi ganda aktif — dua langkah.</p>
         </DialogContent>
       </Dialog>
     </>
@@ -181,7 +208,10 @@ function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { currentUser, selectedDecor } = useOps();
+  const { toast } = useToast();
   const [helpOpen, setHelpOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [logoutArmed, setLogoutArmed] = useState(false);
   const isOwner = isOwnerOrDeveloper(currentUser.role);
   const isManager = isManagerOrDeveloper(currentUser.role);
 
@@ -207,6 +237,8 @@ function Shell({ children }: { children: React.ReactNode }) {
 
   function handleLogout() {
     opsLogout();
+    setLogoutConfirmOpen(false);
+    toast({ title: 'Logout Berhasil', description: 'Sesi OPS telah berakhir. Sampai jumpa!' });
     router.replace('/login');
   }
 
@@ -246,12 +278,51 @@ function Shell({ children }: { children: React.ReactNode }) {
             variant="ghost"
             size="sm"
             className="shrink-0 text-slate-500 hover:bg-red-50 hover:text-red-600"
-            onClick={handleLogout}
+            onClick={() => setLogoutConfirmOpen(true)}
             aria-label="Keluar dari OPS"
           >
             <LogOut size={15} />
             <span className="hidden sm:inline">Keluar</span>
           </Button>
+          <Dialog open={logoutConfirmOpen} onOpenChange={(open) => { setLogoutConfirmOpen(open); if (!open) setLogoutArmed(false); }}>
+            <DialogContent className="max-w-sm rounded-2xl">
+              <DialogHeader>
+                <DialogTitle className="text-base text-navy">Yakin mau keluar?</DialogTitle>
+                <DialogDescription className="text-sm text-slate-500">
+                  Sesi OPS akan berakhir. Kamu perlu memasukkan kode lagi nanti.
+                </DialogDescription>
+              </DialogHeader>
+
+              {/* Info sesi sebelum logout */}
+              <div className="rounded-xl bg-slate-50 border border-slate-100 p-3 space-y-1.5">
+                <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400">Informasi Sesi</p>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400 font-bold uppercase tracking-widest">Pengguna</span>
+                  <span className="font-black text-navy truncate max-w-[60%]">{opsName() || opsUsername()}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400 font-bold uppercase tracking-widest">Peran</span>
+                  <span className="font-black text-navy uppercase">{opsRole()}</span>
+                </div>
+                <p className="text-[10px] text-slate-400 pt-1 border-t border-slate-100">Perangkat ini akan keluar dari OPS dan memerlukan kode akses lagi untuk masuk.</p>
+              </div>
+
+              {/* Dual confirm: langkah 1 konfirmasi niat, langkah 2 tombol merah aktif */}
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={() => setLogoutConfirmOpen(false)}>Batal</Button>
+                {!logoutArmed ? (
+                  <Button variant="secondary" onClick={() => setLogoutArmed(true)}>
+                    Ya, Lanjutkan
+                  </Button>
+                ) : (
+                  <Button className="bg-red-500 hover:bg-red-600 text-white" onClick={handleLogout}>
+                    Keluar Sekarang
+                  </Button>
+                )}
+              </DialogFooter>
+              <p className="text-[9px] text-slate-300 uppercase tracking-widest text-center -mt-1">Konfirmasi ganda aktif — dua langkah untuk keluar.</p>
+            </DialogContent>
+          </Dialog>
         </div>
         {/* Mobile: decor selector in a slim row */}
         <div className="md:hidden w-full border-t border-slate-100 px-4 py-2 bg-slate-50/70">

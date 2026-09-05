@@ -406,7 +406,7 @@ export default function DecorPage() {
           if (confirmDelete) {
             deleteDecor(confirmDelete.id);
             setConfirmDelete(null);
-            toast({ title: 'Decor dihapus' });
+            toast({ title: 'Decor dihapus', description: 'Tercatat di log audit.' });
           }
         }}
       />

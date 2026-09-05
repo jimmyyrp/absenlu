@@ -25,6 +25,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState({ name: 'Admin', role: 'staff' });
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+  const [logoutArmed, setLogoutArmed] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
 
   // Inline login state
@@ -87,7 +88,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       localStorage.removeItem('blu_auth_sig');
     } catch {}
     setIsLogoutConfirmOpen(false);
-    router.push('/'); 
+    toast({ title: "Logout Berhasil", description: "Sesi Anda telah berakhir dengan aman." });
+    router.replace('/login'); 
   };
 
   const navigation = useMemo(() => {
@@ -226,19 +228,45 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </main>
       </div>
 
-      <AlertDialog open={isLogoutConfirmOpen} onOpenChange={setIsLogoutConfirmOpen}>
+      <AlertDialog open={isLogoutConfirmOpen} onOpenChange={(open) => { setIsLogoutConfirmOpen(open); if (!open) setLogoutArmed(false); }}>
         <AlertDialogContent className="rounded-2xl sm:rounded-[2.5rem] border-none p-6 sm:p-10 bg-white shadow-5xl text-center w-[92vw] max-w-sm">
            <div className="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <LogOut size={28} />
            </div>
            <AlertDialogTitle className="text-base font-headline text-navy uppercase font-bold">Keluar Sistem?</AlertDialogTitle>
-           <AlertDialogDescription className="text-slate-400 text-[9px] sm:text-[10px] font-medium italic uppercase tracking-widest mt-1 mb-6">
+           <AlertDialogDescription className="text-slate-400 text-[9px] sm:text-[10px] font-medium italic uppercase tracking-widest mt-1 mb-4">
               Sesi Anda akan berakhir secara aman.
            </AlertDialogDescription>
-           <div className="flex gap-2">
-             <AlertDialogCancel className="rounded-xl h-11 text-[10px] font-black bg-slate-100 text-navy border-none flex-1">BATAL</AlertDialogCancel>
-             <AlertDialogAction onClick={handleLogout} className="bg-red-500 text-white rounded-xl h-11 flex-1 text-[10px] font-black border-none shadow-lg active:scale-95 transition-all">YA, KELUAR</AlertDialogAction>
+
+           {/* Info sesi sebelum logout */}
+           <div className="rounded-xl bg-slate-50 border border-slate-100 p-3 mb-5 text-left space-y-1.5">
+             <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-400">Informasi Sesi</p>
+             <div className="flex items-center justify-between text-[11px]">
+               <span className="text-slate-400 font-bold uppercase tracking-widest">Pengguna</span>
+               <span className="font-black text-navy truncate max-w-[60%]">{user.name}</span>
+             </div>
+             <div className="flex items-center justify-between text-[11px]">
+               <span className="text-slate-400 font-bold uppercase tracking-widest">Peran</span>
+               <span className="font-black text-navy uppercase">{user.role}</span>
+             </div>
+             <p className="text-[9px] text-slate-400 pt-1 border-t border-slate-100">Perangkat akan keluar dari portal dan memerlukan login ulang.</p>
            </div>
+
+           {/* Dual confirm: langkah 1 konfirmasi niat, langkah 2 tombol merah aktif */}
+           {!logoutArmed ? (
+             <div className="flex gap-2">
+               <AlertDialogCancel className="rounded-xl h-11 text-[10px] font-black bg-slate-100 text-navy border-none flex-1">BATAL</AlertDialogCancel>
+               <button type="button" onClick={() => setLogoutArmed(true)} className="rounded-xl h-11 flex-1 text-[10px] font-black border border-slate-200 bg-white text-navy shadow-sm active:scale-95 transition-all">YA, LANJUTKAN</button>
+             </div>
+           ) : (
+             <div className="flex gap-2">
+               <AlertDialogCancel className="rounded-xl h-11 text-[10px] font-black bg-slate-100 text-navy border-none flex-1">BATAL</AlertDialogCancel>
+               <AlertDialogAction onClick={handleLogout} className="gap-2 bg-red-500 text-white rounded-xl h-11 flex-1 text-[10px] font-black border-none shadow-lg active:scale-95 transition-all hover:bg-red-600 focus:ring-red-500/30">
+                 <Loader2 size={14} className="animate-spin" /> KLIK LAGI: KELUAR
+               </AlertDialogAction>
+             </div>
+           )}
+           <p className="text-[8px] text-slate-300 uppercase tracking-widest mt-3">Konfirmasi ganda aktif — dua langkah untuk keluar.</p>
         </AlertDialogContent>
       </AlertDialog>
     </div>

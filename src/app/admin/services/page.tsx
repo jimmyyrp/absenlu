@@ -36,6 +36,8 @@ export default function ServicesAdmin() {
   const [editingItem, setEditingItem] = useState<any | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [deleteArmed, setDeleteArmed] = useState(false);
+  const [bulkDeleteArmed, setBulkDeleteArmed] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [currentPage, setCurrentPage] = useState(1);
@@ -350,13 +352,16 @@ export default function ServicesAdmin() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open && !isSubmitting) setDeleteId(null); }}>
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => { if (!open && !isSubmitting) { setDeleteId(null); setDeleteArmed(false); } }}>
         <AlertDialogContent className="rounded-2xl sm:rounded-[2.5rem] border-none p-6 sm:p-10 bg-white shadow-4xl text-center w-[92vw] max-w-sm">
            <div className="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4"><AlertTriangle size={28} /></div>
            <AlertDialogTitle className="text-base font-headline text-navy uppercase font-bold">Hapus Katalog?</AlertDialogTitle>
            <AlertDialogDescription className="text-slate-400 text-[9px] font-light italic text-center uppercase tracking-wider mb-5">Tindakan ini permanen pada server.</AlertDialogDescription>
            <div className="flex gap-2">
              <AlertDialogCancel disabled={isSubmitting} className="rounded-xl h-11 text-[9px] font-black bg-slate-50 border-none flex-1">BATAL</AlertDialogCancel>
+             {!deleteArmed ? (
+               <button type="button" disabled={isSubmitting} onClick={() => setDeleteArmed(true)} className="rounded-xl h-11 flex-1 text-[9px] font-black border border-slate-200 bg-white text-navy shadow-sm active:scale-95 transition-all disabled:opacity-50">YA, LANJUTKAN</button>
+             ) : (
               <AlertDialogAction disabled={isSubmitting} onClick={async (e) => {
                  e.preventDefault();
                  setIsSubmitting(true);
@@ -375,23 +380,28 @@ export default function ServicesAdmin() {
               }} className="bg-red-500 text-white rounded-xl h-11 flex-1 text-[9px] font-black border-none shadow-lg disabled:opacity-50">
                 {isSubmitting ? <Loader2 className="animate-spin h-3 w-3 mx-auto" /> : "HAPUS"}
               </AlertDialogAction>
+             )}
            </div>
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={bulkDeleteConfirm} onOpenChange={(open) => { if (!open && !isSubmitting) setBulkDeleteConfirm(false); }}>
+      <AlertDialog open={bulkDeleteConfirm} onOpenChange={(open) => { if (!open && !isSubmitting) { setBulkDeleteConfirm(false); setBulkDeleteArmed(false); } }}>
         <AlertDialogContent className="rounded-2xl sm:rounded-[2.5rem] border-none p-6 sm:p-10 bg-white shadow-4xl text-center w-[92vw] max-w-sm">
            <div className="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4"><AlertTriangle size={28} /></div>
            <AlertDialogTitle className="text-base font-headline text-navy uppercase font-bold">Hapus Masal?</AlertDialogTitle>
            <AlertDialogDescription className="text-slate-400 text-[9px] font-light italic uppercase tracking-wider mb-5">Menghapus {selectedIds.length} katalog pilihan secara permanen.</AlertDialogDescription>
            <div className="flex gap-2">
              <AlertDialogCancel disabled={isSubmitting} className="rounded-xl h-11 text-[9px] font-black bg-slate-50 border-none flex-1">BATAL</AlertDialogCancel>
+             {!bulkDeleteArmed ? (
+               <button type="button" disabled={isSubmitting} onClick={() => setBulkDeleteArmed(true)} className="rounded-xl h-11 flex-1 text-[9px] font-black border border-slate-200 bg-white text-navy shadow-sm active:scale-95 transition-all disabled:opacity-50">YA, LANJUTKAN</button>
+             ) : (
              <AlertDialogAction disabled={isSubmitting} onClick={async (e) => {
                e.preventDefault();
                await handleBulkDelete();
              }} className="bg-red-500 text-white rounded-xl h-11 flex-1 text-[9px] font-black border-none shadow-lg disabled:opacity-50">
                {isSubmitting ? <Loader2 className="animate-spin h-3 w-3 mx-auto" /> : "KONFIRMASI"}
              </AlertDialogAction>
+             )}
            </div>
         </AlertDialogContent>
       </AlertDialog>

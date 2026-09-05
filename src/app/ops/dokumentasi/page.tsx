@@ -214,7 +214,7 @@ export default function DokumentasiPage() {
           if (confirmDelete) {
             deletePhoto(confirmDelete.id);
             setConfirmDelete(null);
-            toast({ title: 'Foto dihapus' });
+            toast({ title: 'Foto dihapus', description: 'Tercatat di log audit.' });
           }
         }}
       />

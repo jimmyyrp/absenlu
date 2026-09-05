@@ -31,6 +31,8 @@ export default function UsersAdmin() {
   const [submitting, setSubmitting] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false);
+  const [deleteConfirmArmed, setDeleteConfirmArmed] = useState(false);
+  const [bulkDeleteArmed, setBulkDeleteArmed] = useState(false);
   const [currentUserRole, setCurrentUserRole] = useState('');
   const [currentUserName, setCurrentUserName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -358,13 +360,16 @@ export default function UsersAdmin() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => { if (!open && !submitting) setDeleteConfirmId(null); }}>
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => { if (!open && !submitting) { setDeleteConfirmId(null); setDeleteConfirmArmed(false); } }}>
         <AlertDialogContent className="rounded-2xl sm:rounded-[3rem] border-none p-6 sm:p-10 bg-white shadow-5xl text-center w-[92vw] max-sm:max-w-sm">
           <div className="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner"><AlertTriangle size={28} /></div>
           <AlertDialogTitle className="text-base sm:text-lg font-headline text-navy uppercase font-bold tracking-tighter">Hapus Personel?</AlertDialogTitle>
           <AlertDialogDescription className="text-slate-400 text-[9px] sm:text-[10px] font-light italic uppercase tracking-wider mb-6 leading-relaxed">Seluruh izin akses personel ini akan dicabut secara permanen.</AlertDialogDescription>
           <div className="flex gap-2">
             <AlertDialogCancel disabled={submitting} className="rounded-xl h-11 text-[10px] font-black bg-slate-100 text-navy border-none flex-1">BATAL</AlertDialogCancel>
+            {!deleteConfirmArmed ? (
+              <button type="button" disabled={submitting} onClick={() => setDeleteConfirmArmed(true)} className="rounded-xl h-11 flex-1 text-[10px] font-black border border-slate-200 bg-white text-navy shadow-sm active:scale-95 transition-all disabled:opacity-50">YA, LANJUTKAN</button>
+            ) : (
              <AlertDialogAction disabled={submitting} onClick={async (e) => {
                 e.preventDefault();
                 const target = users.find(u => u.id === deleteConfirmId);
@@ -384,20 +389,25 @@ export default function UsersAdmin() {
             }} className="bg-red-500 text-white rounded-xl h-11 flex-1 text-[10px] font-black border-none shadow-lg disabled:opacity-50">
               {submitting ? <Loader2 className="animate-spin h-3 w-3 mx-auto" /> : "HAPUS AKSES"}
             </AlertDialogAction>
+            )}
           </div>
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={bulkDeleteConfirm} onOpenChange={(open) => { if (!open && !submitting) setBulkDeleteConfirm(false); }}>
+      <AlertDialog open={bulkDeleteConfirm} onOpenChange={(open) => { if (!open && !submitting) { setBulkDeleteConfirm(false); setBulkDeleteArmed(false); } }}>
         <AlertDialogContent className="rounded-2xl sm:rounded-[3rem] border-none p-6 sm:p-10 bg-white shadow-5xl text-center w-[92vw] max-sm:max-w-sm">
           <div className="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-inner"><AlertTriangle size={28} /></div>
           <AlertDialogTitle className="text-base sm:text-lg font-headline text-navy uppercase font-bold tracking-tighter">Hapus Masal?</AlertDialogTitle>
           <AlertDialogDescription className="text-slate-400 text-[9px] sm:text-[10px] font-light italic uppercase tracking-wider mb-6 leading-relaxed">Seluruh izin akses {selectedIds.length} personel ini akan dicabut secara permanen.</AlertDialogDescription>
           <div className="flex gap-2">
             <AlertDialogCancel disabled={submitting} className="rounded-xl h-11 text-[10px] font-black bg-slate-100 text-navy border-none flex-1">BATAL</AlertDialogCancel>
+            {!bulkDeleteArmed ? (
+              <button type="button" disabled={submitting} onClick={() => setBulkDeleteArmed(true)} className="rounded-xl h-11 flex-1 text-[10px] font-black border border-slate-200 bg-white text-navy shadow-sm active:scale-95 transition-all disabled:opacity-50">YA, LANJUTKAN</button>
+            ) : (
             <AlertDialogAction disabled={submitting} onClick={async (e) => { e.preventDefault(); await handleBulkDelete(); }} className="bg-red-500 text-white rounded-xl h-11 flex-1 text-[10px] font-black border-none shadow-lg disabled:opacity-50">
               {submitting ? <Loader2 className="animate-spin h-3 w-3 mx-auto" /> : "HAPUS AKSES"}
             </AlertDialogAction>
+            )}
           </div>
         </AlertDialogContent>
       </AlertDialog>

@@ -30,6 +30,8 @@ export default function TestimonialsAdmin() {
   const [usageLimit, setUsageLimit] = useState(1);
   const [deleteReviewId, setDeleteReviewId] = useState<number | null>(null);
   const [deleteTokenId, setDeleteTokenId] = useState<number | null>(null);
+  const [deleteReviewArmed, setDeleteReviewArmed] = useState(false);
+  const [deleteTokenArmed, setDeleteTokenArmed] = useState(false);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -231,31 +233,39 @@ export default function TestimonialsAdmin() {
       </Dialog>
 
       {/* Delete Confirmation Review */}
-      <AlertDialog open={!!deleteReviewId} onOpenChange={(open) => { if (!open && !isSubmitting) setDeleteReviewId(null); }}>
+      <AlertDialog open={!!deleteReviewId} onOpenChange={(open) => { if (!open && !isSubmitting) { setDeleteReviewId(null); setDeleteReviewArmed(false); } }}>
         <AlertDialogContent className="rounded-2xl sm:rounded-[2.5rem] border-none p-6 sm:p-10 bg-white shadow-4xl text-center w-[92vw] max-sm:max-w-sm">
            <div className="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4"><AlertTriangle size={28} /></div>
            <AlertDialogTitle className="text-base font-headline text-navy uppercase font-bold tracking-tight">Hapus Ulasan?</AlertDialogTitle>
            <AlertDialogDescription className="text-slate-400 text-[9px] font-light italic text-center uppercase tracking-widest mb-6">Data akan hilang permanen & kuota token kembali.</AlertDialogDescription>
            <div className="flex gap-2">
              <AlertDialogCancel disabled={isSubmitting} className="rounded-xl h-11 text-[9px] font-black bg-slate-50 border-none flex-1">BATAL</AlertDialogCancel>
+             {!deleteReviewArmed ? (
+               <button type="button" disabled={isSubmitting} onClick={() => setDeleteReviewArmed(true)} className="rounded-xl h-11 flex-1 text-[9px] font-black border border-slate-200 bg-white text-navy shadow-sm active:scale-95 transition-all disabled:opacity-50">YA, LANJUTKAN</button>
+             ) : (
              <AlertDialogAction disabled={isSubmitting} onClick={async (e) => { e.preventDefault(); await handleDeleteReview(); }} className="bg-red-500 text-white rounded-xl h-11 flex-1 text-[9px] font-black border-none shadow-lg active:scale-95 transition-all disabled:opacity-50">
                {isSubmitting ? <Loader2 className="animate-spin h-3 w-3" /> : "HAPUS"}
              </AlertDialogAction>
+             )}
            </div>
         </AlertDialogContent>
       </AlertDialog>
 
       {/* Delete Confirmation Token */}
-      <AlertDialog open={!!deleteTokenId} onOpenChange={(open) => { if (!open && !isSubmitting) setDeleteTokenId(null); }}>
+      <AlertDialog open={!!deleteTokenId} onOpenChange={(open) => { if (!open && !isSubmitting) { setDeleteTokenId(null); setDeleteTokenArmed(false); } }}>
         <AlertDialogContent className="rounded-2xl sm:rounded-[2.5rem] border-none p-6 sm:p-10 bg-white shadow-4xl text-center w-[92vw] max-w-sm">
            <div className="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4"><AlertTriangle size={28} /></div>
            <AlertDialogTitle className="text-base font-headline text-navy uppercase font-bold tracking-tight">Cabut Akses?</AlertDialogTitle>
            <AlertDialogDescription className="text-slate-400 text-[9px] font-light italic text-center uppercase tracking-widest mb-6">Klien tidak akan bisa lagi menggunakan tautan ini.</AlertDialogDescription>
            <div className="flex gap-2">
              <AlertDialogCancel disabled={isSubmitting} className="rounded-xl h-11 text-[9px] font-black bg-slate-50 border-none flex-1">BATAL</AlertDialogCancel>
+             {!deleteTokenArmed ? (
+               <button type="button" disabled={isSubmitting} onClick={() => setDeleteTokenArmed(true)} className="rounded-xl h-11 flex-1 text-[9px] font-black border border-slate-200 bg-white text-navy shadow-sm active:scale-95 transition-all disabled:opacity-50">YA, LANJUTKAN</button>
+             ) : (
              <AlertDialogAction disabled={isSubmitting} onClick={async (e) => { e.preventDefault(); await handleDeleteToken(); }} className="bg-red-500 text-white rounded-xl h-11 flex-1 text-[9px] font-black border-none shadow-lg active:scale-95 transition-all disabled:opacity-50">
                {isSubmitting ? <Loader2 className="animate-spin h-3 w-3" /> : "CABUT"}
              </AlertDialogAction>
+             )}
            </div>
         </AlertDialogContent>
       </AlertDialog>

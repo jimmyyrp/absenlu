@@ -1,10 +1,9 @@
 "use client"
 
 import * as React from "react"
+import { cn } from "@/lib/utils"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
-
-import { cn } from "@/lib/utils"
 
 const Dialog = DialogPrimitive.Root
 
@@ -31,28 +30,61 @@ DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
 
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { hideCloseButton?: boolean }
->(({ className, children, hideCloseButton, ...props }, ref) => (
-  <DialogPortal>
-    <DialogOverlay />
-    <DialogPrimitive.Content
-      ref={ref}
-      className={cn(
-        "fixed left-[50%] top-[50%] z-[50] grid w-[calc(100vw-2rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain",
-        className
-      )}
-      {...props}
-    >
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { hideCloseButton?: boolean; suppressDialogFocus?: boolean }
+>(({ className, children, hideCloseButton, suppressDialogFocus = false, ...props }, ref) => {
+  const rootRef = React.useRef<HTMLDivElement | null>(null)
+  React.useEffect(() => {
+    if (!suppressDialogFocus || !rootRef.current) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Tab') return
+      const focusable = Array.from(
+        rootRef.current?.querySelectorAll<HTMLElement>('input, button, textarea, select, a[href], [tabindex]:not([tabindex="-1"])') ?? []
+      ).filter((el) => el.offsetParent !== null || el === document.activeElement)
+      if (focusable.length === 0) {
+        event.preventDefault()
+        return
+      }
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey) {
+        if (document.activeElement === first) {
+          event.preventDefault()
+          last.focus()
+        }
+      } else if (document.activeElement === last) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    rootRef.current.addEventListener('keydown', onKeyDown)
+    return () => {
+      rootRef.current?.removeEventListener('keydown', onKeyDown)
+    }
+  }, [suppressDialogFocus])
+  return (
+    <DialogPortal>
+      <DialogOverlay />
+      <DialogPrimitive.Content
+        ref={(node) => {
+          (ref as React.MutableRefObject<HTMLDivElement | null>).current = node
+          rootRef.current = node
+        }}
+        className={cn(
+          "fixed left-[50%] top-[50%] z-[50] grid w-[calc(100vw-2rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-2xl sm:rounded-[2rem] p-4 sm:p-6 max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain",
+          className
+        )}
+        {...props}
+      >
       {children}
-      {!hideCloseButton && (
-        <DialogPrimitive.Close aria-label="Tutup dialog" title="Tutup" className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full bg-navy/10 hover:bg-navy/20 backdrop-blur-md opacity-100 ring-offset-background transition-all focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none z-[100] border border-navy/5">
-          <X className="h-5 w-5 text-navy stroke-[3px]" />
-          <span className="sr-only">Close</span>
-        </DialogPrimitive.Close>
+      {!hideCloseButton && (            <DialogPrimitive.Close aria-label="Tutup dialog" title="Tutup" className="absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full bg-navy/10 hover:bg-navy/20 backdrop-blur-md opacity-100 ring-offset-background transition-all focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none z-[100] border border-navy/5">
+              <X className="h-5 w-5 text-navy stroke-[3px]" />
+              <span className="sr-only">Close</span>
+            </DialogPrimitive.Close>
       )}
     </DialogPrimitive.Content>
-  </DialogPortal>
-))
+    </DialogPortal>
+  )
+})
 DialogContent.displayName = DialogPrimitive.Content.displayName
 
 const DialogHeader = ({

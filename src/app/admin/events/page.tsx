@@ -86,6 +86,7 @@ export default function EventsAdmin() {
 
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteConfirmArmed, setDeleteConfirmArmed] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -523,7 +524,7 @@ export default function EventsAdmin() {
       </Dialog>
 
       {/* Delete Confirm */}
-      <AlertDialog open={deleteConfirmOpen} onOpenChange={(open) => { if (!open && !isSubmitting) { setDeleteConfirmOpen(false); setDeleteId(null); } }}>
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={(open) => { if (!open && !isSubmitting) { setDeleteConfirmOpen(false); setDeleteId(null); setDeleteConfirmArmed(false); } }}>
         <AlertDialogContent className="rounded-[2.5rem] border-none p-10 bg-white shadow-4xl text-center w-[92vw] max-sm:max-w-sm">
           <div className="w-16 h-16 bg-red-50 text-red-500 rounded-[1.8rem] flex items-center justify-center mx-auto mb-4"><AlertTriangle size={32} /></div>
           <AlertDialogTitle className="text-base font-headline text-navy uppercase font-bold">Hapus Event?</AlertDialogTitle>
@@ -532,6 +533,9 @@ export default function EventsAdmin() {
           </AlertDialogDescription>
           <div className="flex gap-2">
             <AlertDialogCancel className="rounded-xl h-12 text-[10px] font-black bg-slate-50 border-none flex-1">BATAL</AlertDialogCancel>
+            {!deleteConfirmArmed ? (
+              <button type="button" disabled={isSubmitting} onClick={() => setDeleteConfirmArmed(true)} className="rounded-xl h-12 flex-1 text-[10px] font-black border border-slate-200 bg-white text-navy shadow-sm active:scale-95 transition-all disabled:opacity-50">YA, LANJUTKAN</button>
+            ) : (
             <AlertDialogAction
               onClick={handleDelete}
               disabled={isSubmitting}
@@ -539,6 +543,7 @@ export default function EventsAdmin() {
             >
               {isSubmitting ? <Loader2 className="animate-spin h-4 w-4 mx-auto" /> : "YA, HAPUS"}
             </AlertDialogAction>
+            )}
           </div>
         </AlertDialogContent>
       </AlertDialog>

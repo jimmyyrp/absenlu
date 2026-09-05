@@ -25,6 +25,8 @@ type Spec = {
   head?: boolean;
   count?: 'exact' | 'planned';
   single?: 'single' | 'maybeSingle';
+  updates?: Record<string, unknown>;
+  delete?: boolean;
 };
 
 async function call(body: unknown): Promise<CmsResult> {
@@ -48,12 +50,16 @@ class CmsQuery {
     this.spec = { table, filters: [], orders: [] };
   }
 
-  select(columns?: string | { head?: boolean; count?: 'exact' }): this {
-    if (columns && typeof columns === 'object') {
-      this.spec.head = Boolean(columns.head);
-      this.spec.count = columns.count || this.spec.count;
-    } else {
+  select(
+    columns?: string,
+    options?: { head?: boolean; count?: 'exact' | 'planned' },
+  ): this {
+    if (columns !== undefined) {
       this.spec.columns = columns;
+    }
+    if (options) {
+      this.spec.head = Boolean(options.head);
+      this.spec.count = options.count || this.spec.count;
     }
     return this;
   }
@@ -109,16 +115,31 @@ class CmsQuery {
     return call({ table: this.spec.table, upsert: { rows: Array.isArray(rows) ? rows : [rows], onConflict: opts?.onConflict } });
   }
 
-  async update(payload: Record<string, unknown>): Promise<CmsResult> {
-    return call({ table: this.spec.table, updates: payload, filters: this.spec.filters });
+  /**
+   * Update yang masih bisa di-chain (.update(...).eq('id', x)) seperti supabase-js.
+   * Eksekusi terjadi saat hasilnya di-await (thenable).
+   */
+  update(payload: Record<string, unknown>): CmsQueryBuilder {
+    return new CmsQueryBuilder({ ...this.spec, updates: payload });
   }
 
-  async delete(): Promise<CmsResult> {
-    return call({ table: this.spec.table, delete: true, filters: this.spec.filters });
+  /**
+   * Delete yang masih bisa di-chain (.delete().eq('id', x)) seperti supabase-js.
+   * Eksekusi terjadi saat hasilnya di-await (thenable).
+   */
+  delete(): CmsQueryBuilder {
+    return new CmsQueryBuilder({ ...this.spec, delete: true });
   }
 
-  async then(): Promise<CmsResult> {
-    return this.execute();
+  async then<
+    T1 = CmsResult,
+    T2 = never,
+  >(onfulfilled?: ((value: CmsResult) => T1 | PromiseLike<T1>) | null, onrejected?: ((reason: unknown) => T2 | PromiseLike<T2>) | null): Promise<T1 | T2> {
+    return this.execute().then(onfulfilled, onrejected);
+  }
+
+  catch<T2 = never>(onrejected?: ((reason: unknown) => T2 | PromiseLike<T2>) | null): Promise<CmsResult | T2> {
+    return this.execute().catch(onrejected);
   }
 
   async execute(): Promise<CmsResult> {
@@ -132,6 +153,57 @@ class CmsQuery {
       head: this.spec.head,
       count: this.spec.count,
       single: this.spec.single,
+    });
+  }
+}
+
+/** Builder hasil update/delete: mendukung filter chain lalu dieksekusi saat di-await. */
+class CmsQueryBuilder {
+  private spec: Spec;
+
+  constructor(spec: Spec) {
+    this.spec = spec;
+  }
+
+  filter(col: string, op: string, val: unknown): this {
+    this.spec.filters.push({ col, op, val });
+    return this;
+  }
+
+  is(col: string, val: unknown): this {
+    return this.filter(col, 'is', val);
+  }
+
+  eq(col: string, val: unknown): this {
+    return this.filter(col, 'eq', val);
+  }
+
+  in(col: string, vals: unknown[]): this {
+    return this.filter(col, 'in', vals);
+  }
+
+  async then<
+    T1 = CmsResult,
+    T2 = never,
+  >(onfulfilled?: ((value: CmsResult) => T1 | PromiseLike<T1>) | null, onrejected?: ((reason: unknown) => T2 | PromiseLike<T2>) | null): Promise<T1 | T2> {
+    return call({
+      table: this.spec.table,
+      updates: this.spec.updates,
+      delete: this.spec.delete,
+      filters: this.spec.filters,
+    }).then(onfulfilled, onrejected);
+  }
+
+  catch<T2 = never>(onrejected?: ((reason: unknown) => T2 | PromiseLike<T2>) | null): Promise<CmsResult | T2> {
+    return this.execute().catch(onrejected);
+  }
+
+  async execute(): Promise<CmsResult> {
+    return call({
+      table: this.spec.table,
+      updates: this.spec.updates,
+      delete: this.spec.delete,
+      filters: this.spec.filters,
     });
   }
 }

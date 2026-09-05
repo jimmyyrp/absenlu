@@ -31,6 +31,12 @@ const AUDIT_LABEL: Record<string, { label: string; color: string }> = {
   'koreksi.ajukan': { label: 'Koreksi Diajukan', color: 'bg-amber-100 text-amber-700' },
   'koreksi.setujui': { label: 'Koreksi Disetujui', color: 'bg-emerald-100 text-emerald-700' },
   'koreksi.tolak': { label: 'Koreksi Ditolak', color: 'bg-red-100 text-red-700' },
+  'decor.hapus': { label: 'Hapus Decor', color: 'bg-red-100 text-red-700' },
+  'tugas.hapus': { label: 'Hapus Tugas', color: 'bg-red-100 text-red-700' },
+  'foto.hapus': { label: 'Hapus Foto', color: 'bg-red-100 text-red-700' },
+  'pengeluaran.hapus': { label: 'Hapus Pengeluaran', color: 'bg-red-100 text-red-700' },
+  'kegiatan.hapus': { label: 'Hapus Kegiatan', color: 'bg-red-100 text-red-700' },
+  'pengguna.hapus': { label: 'Hapus Anggota', color: 'bg-red-100 text-red-700' },
 };
 
 const SECTION_TABS = [
@@ -644,8 +650,7 @@ export default function AbsensiPage() {
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>        <Dialog open={showNoWork} onOpenChange={setShowNoWork}>
-        <DialogContent className="max-w-sm overflow-x-hidden">
+      </Dialog>        <Dialog open={showNoWork} onOpenChange={setShowNoWork}>            <DialogContent className="max-w-sm overflow-x-hidden" suppressDialogFocus>
           <DialogHeader>
             <DialogTitle className="text-base text-navy">Tidak Bekerja Hari Ini</DialogTitle>
             <DialogDescription className="text-xs text-slate-400">
@@ -688,7 +693,7 @@ export default function AbsensiPage() {
           if (confirmDelete) {
             deleteSession(confirmDelete.id);
             setConfirmDelete(null);
-            toast({ title: 'Session dihapus' });
+            toast({ title: 'Session dihapus', description: 'Tercatat di log audit.' });
           }
         }}
       />

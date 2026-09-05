@@ -3,10 +3,6 @@
 import React, { useMemo, useState } from 'react';
 import { Plus, Trash2, ListChecks, AlertTriangle } from 'lucide-react';
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
   DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
@@ -16,7 +12,7 @@ import { decorScheduleLocked, decorScheduleLockReason } from '@/lib/ops/reports'
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { PageHeader, SectionCard, EmptyState } from '../ops-ui';
+import { PageHeader, SectionCard, EmptyState, ConfirmDialog } from '../ops-ui';
 import { useToast } from '@/hooks/use-toast';
 import { useSubmitLock } from '@/hooks/use-submit-lock';
 
@@ -196,36 +192,23 @@ export default function TodoPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Confirm delete dialog */}
-      <AlertDialog open={!!confirmDelete} onOpenChange={(open) => !open && setConfirmDelete(null)}>
-        <AlertDialogContent className="rounded-2xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-navy">Hapus langkah ini?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Langkah <span className="font-semibold text-navy">"{confirmDelete?.title}"</span> akan dihapus secara permanen dari decor <span className="font-semibold text-navy">{selectedDecor?.name}</span>. Tindakan ini tidak dapat dibatalkan.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={() => setConfirmDelete(null)}
-              className="text-[10px] font-black uppercase tracking-widest"
-            >
-              Batal
-            </AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-red-600 hover:bg-red-700 text-white text-[10px] font-black uppercase tracking-widest"
-              onClick={() => {
-                if (confirmDelete) {
-                  deleteTask(confirmDelete.id);
-                  setConfirmDelete(null);
-                }
-              }}
-            >
-              Ya, Hapus
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Confirm delete dialog (dual confirm) */}
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onOpenChange={(open) => !open && setConfirmDelete(null)}
+        title="Hapus langkah ini?"
+        description={
+          <>Langkah <span className="font-semibold text-navy">"{confirmDelete?.title}"</span> akan dihapus secara permanen dari decor <span className="font-semibold text-navy">{selectedDecor?.name}</span>. Tindakan ini tidak dapat dibatalkan.</>
+        }
+        confirmText="Ya, Hapus"
+        onConfirm={() => {
+          if (confirmDelete) {
+            deleteTask(confirmDelete.id);
+            setConfirmDelete(null);
+            toast({ title: 'Langkah dihapus', description: 'Tercatat di log audit.' });
+          }
+        }}
+      />
     </div>
   );
 }

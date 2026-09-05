@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -186,8 +186,14 @@ export function ConfirmDialog({
   confirmClass?: string;
   onConfirm: () => void;
 }) {
+  // Dual confirm: langkah 1 konfirmasi niat, langkah 2 tombol merah aktif.
+  const [armed, setArmed] = useState(false);
+  const handleOpenChange = (o: boolean) => {
+    if (!o) setArmed(false);
+    onOpenChange(o);
+  };
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog open={open} onOpenChange={handleOpenChange}>
       <AlertDialogContent className="rounded-2xl">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-navy">{title}</AlertDialogTitle>
@@ -196,16 +202,26 @@ export function ConfirmDialog({
         <AlertDialogFooter>
           <AlertDialogCancel
             className="text-[10px] font-black uppercase tracking-widest"
-            onClick={() => onOpenChange(false)}
+            onClick={() => handleOpenChange(false)}
           >
             Batal
           </AlertDialogCancel>
-          <AlertDialogAction
-            onClick={onConfirm}
-            className={cn("text-[10px] font-black uppercase tracking-widest", confirmClass)}
-          >
-            {confirmText}
-          </AlertDialogAction>
+          {!armed ? (
+            <button
+              type="button"
+              onClick={() => setArmed(true)}
+              className="inline-flex h-10 items-center justify-center rounded-md bg-slate-100 px-4 text-[10px] font-black uppercase tracking-widest text-navy hover:bg-slate-200 transition-colors"
+            >
+              Ya, Lanjutkan
+            </button>
+          ) : (
+            <AlertDialogAction
+              onClick={onConfirm}
+              className={cn("text-[10px] font-black uppercase tracking-widest", confirmClass)}
+            >
+              {confirmText}
+            </AlertDialogAction>
+          )}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

@@ -31,7 +31,7 @@ export default function SettingsAdmin() {
       const { data, error } = await cms.from('site_settings').select('*');
       if (error) throw error;
       if (data) {
-        const mapped = data.reduce((acc: any, item) => {
+        const mapped = data.reduce((acc: any, item: any) => {
           acc[item.key] = item.value;
           return acc;
         }, {});

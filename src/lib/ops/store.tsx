@@ -305,8 +305,10 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
     },
     deleteDecor: (id) => {
       if (!isManager) return;
+      const at = new Date().toISOString();
       patchState((p) => ({
         ...p,
+        audit: [...p.audit, { id: uid(), at, userId: p.currentUserId, action: 'decor.hapus', detail: `Menghapus decor "${p.decors.find((d) => d.id === id)?.name || id}" beserta data terkait`, targetId: id }],
         decors: p.decors.filter((d) => d.id !== id),
         tasks: p.tasks.filter((t) => t.decorId !== id),
         attendance: p.attendance.map((a) =>
@@ -351,11 +353,17 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
     },
     deleteUser: (id) => {
       if (!isOwner) return;
+      const at = new Date().toISOString();
       patchState((p) => {
         // Guardrail: jangan hapus user yang punya tugas belum selesai
         const hasActiveTasks = p.tasks.some((t) => t.assigneeId === id && t.status !== 'selesai');
         if (hasActiveTasks) return p;
-        return { ...p, users: p.users.filter((u) => u.id !== id) };
+        const target = p.users.find((u) => u.id === id);
+        return {
+          ...p,
+          audit: [...p.audit, { id: uid(), at, userId: p.currentUserId, action: 'pengguna.hapus', detail: `Menghapus anggota "${target?.name || id}"`, targetId: id }],
+          users: p.users.filter((u) => u.id !== id),
+        };
       });
     },
     setCurrentUser: (id) => patchState((p) => ({ ...p, currentUserId: id })),
@@ -377,7 +385,16 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
         tasks: p.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
       })),
     deleteTask: (id) =>
-      patchState((p) => ({ ...p, tasks: p.tasks.filter((t) => t.id !== id) })),
+      patchState((p) => {
+        const task = p.tasks.find((t) => t.id === id);
+        if (!task) return p;
+        const at = new Date().toISOString();
+        return {
+          ...p,
+          audit: [...p.audit, { id: uid(), at, userId: p.currentUserId, action: 'tugas.hapus', detail: `Menghapus langkah "${task.title}"${task.decorId ? ` dari ${p.decors.find((d) => d.id === task.decorId)?.name || 'decor'}` : ''}`, targetId: id }],
+          tasks: p.tasks.filter((t) => t.id !== id),
+        };
+      }),
     toggleTask: (id) =>
       patchState((p) => {
         const task = p.tasks.find((t) => t.id === id);
@@ -569,7 +586,12 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
         if (!act) return p;
         // Crew cuma bisa hapus aktivitas sendiri
         if (!isManager && act.userId !== p.currentUserId) return p;
-        return { ...p, activities: p.activities.filter((a) => a.id !== id) };
+        const at = new Date().toISOString();
+        return {
+          ...p,
+          audit: [...p.audit, { id: uid(), at, userId: p.currentUserId, action: 'kegiatan.hapus', detail: `Menghapus kegiatan: ${(act.description || '').slice(0, 80)}`, targetId: id }],
+          activities: p.activities.filter((a) => a.id !== id),
+        };
       }),
     activitiesForProject: (decorId) =>
       state.activities
@@ -582,7 +604,16 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
       return ph;
     },
     deletePhoto: (id) =>
-      patchState((p) => ({ ...p, photos: p.photos.filter((ph) => ph.id !== id) })),
+      patchState((p) => {
+        const photo = p.photos.find((ph) => ph.id === id);
+        if (!photo) return p;
+        const at = new Date().toISOString();
+        return {
+          ...p,
+          audit: [...p.audit, { id: uid(), at, userId: p.currentUserId, action: 'foto.hapus', detail: `Menghapus foto dokumentasi${photo.decorId ? ` proyek ${p.decors.find((d) => d.id === photo.decorId)?.name || ''}` : ''}`, targetId: id }],
+          photos: p.photos.filter((ph) => ph.id !== id),
+        };
+      }),
     photosForProject: (decorId) =>
       state.photos.filter((ph) => ph.decorId === decorId).reverse(),
 
@@ -608,7 +639,16 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
     },
     deleteExpense: (id) => {
       if (!isManager) return;
-      patchState((p) => ({ ...p, expenses: p.expenses.filter((e) => e.id !== id) }));
+      const at = new Date().toISOString();
+      patchState((p) => {
+        const exp = p.expenses.find((e) => e.id === id);
+        if (!exp) return p;
+        return {
+          ...p,
+          audit: [...p.audit, { id: uid(), at, userId: p.currentUserId, action: 'pengeluaran.hapus', detail: `Menghapus pengeluaran "${exp.description}" (Rp${exp.amount.toLocaleString('id-ID')})`, targetId: id }],
+          expenses: p.expenses.filter((e) => e.id !== id),
+        };
+      });
     },
     expensesForProject: (decorId) => state.expenses.filter((e) => e.decorId === decorId),
     decorExpenseTotal: (decorId) =>

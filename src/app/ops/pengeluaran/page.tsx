@@ -377,7 +377,7 @@ export default function PengeluaranPage() {
           if (confirmDelete) {
             deleteExpense(confirmDelete.id);
             setConfirmDelete(null);
-            toast({ title: 'Pengeluaran dihapus' });
+            toast({ title: 'Pengeluaran dihapus', description: 'Tercatat di log audit.' });
           }
         }}
       />

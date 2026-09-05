@@ -32,6 +32,8 @@ export default function DeveloperPage() {
   const [sweepLoading, setSweepLoading] = useState(false);
   const [sweepConfirmOpen, setSweepConfirmOpen] = useState(false);
   const [maintenanceConfirmOpen, setMaintenanceConfirmOpen] = useState(false);
+  const [sweepArmed, setSweepArmed] = useState(false);
+  const [maintenanceArmed, setMaintenanceArmed] = useState(false);
 
   useEffect(() => {
     setRole(localStorage.getItem('blu_user_role') || '');
@@ -292,7 +294,7 @@ export default function DeveloperPage() {
                     </div>
                   )}
 
-                  <AlertDialog open={sweepConfirmOpen} onOpenChange={setSweepConfirmOpen}>
+                  <AlertDialog open={sweepConfirmOpen} onOpenChange={(open) => { setSweepConfirmOpen(open); if (!open) setSweepArmed(false); }}>
                     <AlertDialogContent className="rounded-[2rem] border-none p-8 bg-white w-[92vw] max-w-md">
                       <AlertDialogTitle className="text-sm font-headline text-navy uppercase font-bold">Hapus File Yatim?</AlertDialogTitle>
                       <AlertDialogDescription className="text-slate-500 text-[11px] leading-relaxed mt-2">
@@ -301,14 +303,18 @@ export default function DeveloperPage() {
                       </AlertDialogDescription>
                       <div className="flex gap-2 mt-6">
                         <AlertDialogCancel className="rounded-xl h-11 text-[10px] font-black bg-slate-100 text-navy border-none flex-1">BATAL</AlertDialogCancel>
+                        {!sweepArmed ? (
+                          <button type="button" onClick={() => setSweepArmed(true)} className="rounded-xl h-11 flex-1 text-[10px] font-black border border-slate-200 bg-white text-navy shadow-sm active:scale-95 transition-all">YA, LANJUTKAN</button>
+                        ) : (
                         <AlertDialogAction onClick={runStorageSweep} disabled={sweepLoading || audit.purgeableCount === 0} className="bg-red-600 text-white rounded-xl h-11 flex-1 text-[10px] font-black border-none shadow-lg active:scale-95 transition-all">
                           YA, BERSIHKAN
                         </AlertDialogAction>
+                        )}
                       </div>
                     </AlertDialogContent>
                   </AlertDialog>
 
-                  <AlertDialog open={maintenanceConfirmOpen} onOpenChange={setMaintenanceConfirmOpen}>
+                  <AlertDialog open={maintenanceConfirmOpen} onOpenChange={(open) => { setMaintenanceConfirmOpen(open); if (!open) setMaintenanceArmed(false); }}>
                     <AlertDialogContent className="rounded-[2rem] border-none p-8 bg-white w-[92vw] max-w-md">
                       <div className="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4"><Trash2 size={26} /></div>
                       <AlertDialogTitle className="text-sm font-headline text-navy uppercase font-bold text-center">Hapus Permanen?</AlertDialogTitle>
@@ -317,9 +323,13 @@ export default function DeveloperPage() {
                       </AlertDialogDescription>
                       <div className="flex gap-2 mt-6">
                         <AlertDialogCancel className="rounded-xl h-11 text-[10px] font-black bg-slate-100 text-navy border-none flex-1">BATAL</AlertDialogCancel>
+                        {!maintenanceArmed ? (
+                          <button type="button" onClick={() => setMaintenanceArmed(true)} className="rounded-xl h-11 flex-1 text-[10px] font-black border border-slate-200 bg-white text-navy shadow-sm active:scale-95 transition-all">YA, LANJUTKAN</button>
+                        ) : (
                         <AlertDialogAction onClick={runMaintenance} disabled={maintenanceLoading} className="bg-red-600 text-white rounded-xl h-11 flex-1 text-[10px] font-black border-none shadow-lg active:scale-95 transition-all disabled:opacity-50">
                           {maintenanceLoading ? <Loader2 className="animate-spin h-4 w-4 mx-auto" /> : "YA, HAPUS PERMANEN"}
                         </AlertDialogAction>
+                        )}
                       </div>
                     </AlertDialogContent>
                   </AlertDialog>
