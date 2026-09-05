@@ -35,8 +35,8 @@ BLUDECOR adalah sistem manajemen internal untuk bisnis dekorasi event. Sistem in
 
 **Catatan Penting:**
 
-- Data tersimpan di browser (localStorage), bukan server cloud
-- Gunakan browser yang sama untuk mengakses data yang sama
+- Data tersimpan di **MongoDB (cloud)** dan disinkronkan otomatis; `localStorage` hanya cache offline
+- Login menggunakan **akun yang sama** dengan portal admin (`/admin/users`) — username & password milik masing-masing orang, bukan password umum per-peran
 - Disarankan menggunakan Chrome atau Firefox versi terbaru
 
 ---
@@ -594,6 +594,11 @@ Kelola user, kategori pekerjaan, dan konfigurasi sistem.
 
 ### 🔑 Tab: Tim & Akses
 
+> **Akun login** (username & password) dibuat/dikelola di portal admin
+> (`/admin/users`) — satu sumber utuh untuk admin dan OPS. Anggota tim OPS
+> muncul otomatis di tab ini begitu akunnya login ke OPS; di sini Anda
+> mengatur profil OPS-nya (nama tampilan, peran OPS, status aktif, No. HP).
+
 #### Menambah Anggota Tim
 
 1. Klik **"+ Tambah User"**
@@ -704,7 +709,7 @@ Kelola user, kategori pekerjaan, dan konfigurasi sistem.
 ### ❓ FAQ
 
 **Q: Data saya hilang setelah ganti browser?**
-A: Data tersimpan di browser (localStorage). Gunakan browser yang sama, atau export data sebelum ganti.
+A: Data tersimpan di **MongoDB** dan tidak hilang. Ganti browser tetap melihat data karena aplikasi menyinkronkan dari server saat login.
 
 **Q: Saya salah absen, bagaimana cara memperbaiki?**
 A: Crew bisa ajukan **Koreksi** ke admin. Admin/Owner bisa langsung mengedit atau menghapus session di tab Status.
@@ -743,7 +748,7 @@ A: Buka **Pengaturan → Tim & Akses → + Tambah User** (hanya Owner yang bisa)
 Jika mengalami kendala:
 
 1. Periksa apakah Anda login dengan role yang benar
-2. Pastikan browser mendukung localStorage
+2. Pastikan akun Anda sudah dibuat di `/admin/users` (akun digabung dengan portal admin, bukan password per-peran)
 3. Hubungi admin/owner tim Anda
 
 ---

@@ -7,7 +7,7 @@ import type {
   TaskStatus, AttendanceStatus, DecorStatus,
 } from './types';
 import { SEED_STATE } from './seed';
-import { opsUserId, opsRole, opsLogout } from './auth';
+import { opsUserId, opsRole, opsUsername, opsName, opsLogout } from './auth';
 import { fetchOpsState, saveOpsState } from './api';
 
 // localStorage hanya cache offline. MongoDB (server) adalah sumber data utama.
@@ -145,20 +145,38 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
       }
       if (cancelled) return;
 
-      // User aktif mengikuti role yang login (u1=owner u2=admin u3=crew)
-      const uid = opsUserId();
+      // User aktif mengikuti akun CMS yang login (username = cmsusers.username).
+      // Users OPS adalah turunan dinamis dari akun CMS: bila belum ada di
+      // dokumen ops, dibuat otomatis (provisioning) — tidak ada lagi akun
+      // hardcoded seperti Owner BluDecor / Admin Kantor.
+      const sessionUid = opsUserId();
       const role = opsRole();
-      const username = localStorage.getItem('bludecor_ops_username')?.trim().toLowerCase();
-      const sessionUser = username
-        ? loaded.users.find((u) => u.active && u.username.toLowerCase() === username)
-        : loaded.users.find((u) => u.active && uid && u.id === uid);
-      if (sessionUser && (!role || sessionUser.role === role)) {
-        loaded.currentUserId = sessionUser.id;
-      } else {
+      const username = opsUsername();
+      const sessionName = opsName();
+
+      if (!username || !role) {
         opsLogout();
         window.location.replace('/login');
         return;
       }
+
+      const existing = loaded.users.find((u) => u.username.toLowerCase() === username);
+      const finalUser: OpsUser = existing
+        ? { ...existing, active: true, role }
+        : {
+            id: sessionUid || `ops-${username}`,
+            name: sessionName || username,
+            username,
+            role,
+            active: true,
+            createdAt: new Date().toISOString(),
+          };
+      const users = existing
+        ? loaded.users.map((u) => (u.username.toLowerCase() === username ? finalUser : u))
+        : [...loaded.users, finalUser];
+
+      loaded = { ...loaded, users, currentUserId: finalUser.id };
+      cacheLocal(loaded);
       setState(loaded);
       setReady(true);
 
@@ -596,15 +614,34 @@ export function OpsProvider({ children }: { children: React.ReactNode }) {
     resetData: () => {
       if (!isOwner) return;
       setState((prev) => {
-        const uid2 = opsUserId();
-        const seedWithRole = uid2 && SEED_STATE.users.some((u) => u.id === uid2)
-          ? { ...SEED_STATE, currentUserId: uid2 }
-          : SEED_STATE;
+        // Pertahankan akun yang sedang login (turunan dari MongoDB) agar
+        // reset data tidak mengunci owner — users bukan lagi seed statis.
+        const current = prev.users.find((u) => u.id === prev.currentUserId) ?? prev.users.find((u) => u.active);
+        const username = opsUsername();
+        const role = opsRole();
+        const sessionUser: OpsUser | null =
+          username && role
+            ? {
+                id: opsUserId() || `ops-${username}`,
+                name: opsName() || (current ? current.name : username),
+                username,
+                role,
+                active: true,
+                phone: current?.phone,
+                createdAt: current?.createdAt || new Date().toISOString(),
+              }
+            : null;
+        const fresh: OpsState = {
+          ...SEED_STATE,
+          users: sessionUser ? [sessionUser] : [],
+          currentUserId: sessionUser ? sessionUser.id : '',
+          monthlyReportMonth: prev.monthlyReportMonth,
+        };
         localStorage.removeItem(STORAGE_KEY);
         try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(seedWithRole));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(fresh));
         } catch {}
-        return seedWithRole;
+        return fresh;
       });
     },
   };

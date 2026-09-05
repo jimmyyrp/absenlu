@@ -9,8 +9,9 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf .next node_modules && npm install",
-    "maintenance": "curl -X POST http://localhost:9002/api/maintenance",
+    "maintenance": "node scripts/cleanup.js",
     "db:import": "node scripts/import-from-supabase.js",
+    "db:migrate": "node scripts/migrate.js",
     "db:seed": "node scripts/seed.js"
   },
   "dependencies": {

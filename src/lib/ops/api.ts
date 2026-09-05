@@ -1,4 +1,5 @@
 import type { OpsState } from './types';
+import { OPS_USERNAME_KEY } from './auth';
 
 /**
  * Client helper to read/write the OPS state through the MongoDB-backed API.
@@ -54,7 +55,7 @@ export async function saveOpsState(state: OpsState): Promise<boolean> {
         state,
         updatedBy:
           (typeof window !== 'undefined' &&
-            window.localStorage.getItem('bludecor_ops_username')) ||
+            window.localStorage.getItem(OPS_USERNAME_KEY)) ||
           'ops',
       }),
     });

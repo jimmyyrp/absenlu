@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, User, LogIn, Eye, EyeOff } from 'lucide-react';
+import { Lock, User, LogIn, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { opsLogin, roleLabel, type OpsRole } from '@/lib/ops/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,19 +15,21 @@ export function OpsLogin() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [showHint, setShowHint] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [showPw, setShowPw] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!username.trim() || !password) {
       setError('Masukkan username dan password.');
       return;
     }
-    const role: OpsRole | null = opsLogin(username, password);
+    setLoading(true);
+    const role: OpsRole | null = await opsLogin(username, password);
+    setLoading(false);
     if (role) {
-      toast({ title: `Masuk sebagai ${roleLabel(role)}`, description: 'Peran aktif mengikuti role login.' });
+      toast({ title: `Masuk sebagai ${roleLabel(role)}`, description: 'Peran aktif mengikuti akun yang dipilih.' });
       router.replace('/ops');
     } else {
       setError('Username atau password tidak cocok dengan akun OPS.');
@@ -47,7 +49,7 @@ export function OpsLogin() {
 
         <div className="bg-white rounded-2xl p-6 shadow-2xl">
           <h1 className="text-lg font-headline font-bold text-navy">Masuk ke OPS</h1>
-          <p className="text-xs text-slate-400 mt-1 mb-5">Akses internal tim dekorasi · password menentukan peran.</p>
+          <p className="text-xs text-slate-400 mt-1 mb-5">Akses internal tim dekorasi · akun dibuat di halaman /admin/users.</p>
 
           <form onSubmit={submit} className="space-y-4">
             <div>
@@ -89,29 +91,14 @@ export function OpsLogin() {
 
             {error && <p className="text-xs text-red-500 font-semibold">{error}</p>}
 
-            <Button type="submit" className="w-full bg-navy hover:bg-gold text-white h-11">
-              <LogIn size={16} /> Masuk
+            <Button type="submit" disabled={loading} className="w-full bg-navy hover:bg-gold text-white h-11">
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <LogIn size={16} />} Masuk
             </Button>
           </form>
 
-          <button
-            type="button"
-            onClick={() => setShowHint((v) => !v)}
-            className="mt-4 w-full text-[10px] text-slate-400 hover:text-navy text-left underline underline-offset-2"
-          >
-            {showHint ? 'Sembunyikan' : 'Demo: lihat password per peran'}
-          </button>
-          {showHint && (
-            <div className="mt-2 rounded-xl bg-slate-50 border border-slate-100 p-3 text-[10px] text-slate-500 space-y-1.5">
-              <p className="font-bold text-navy mb-1">Akun tersedia:</p>
-              <div className="flex justify-between"><span className="text-slate-400">Owner</span><code className="font-mono text-navy">owner / owner123</code></div>
-              <div className="flex justify-between"><span className="text-slate-400">Admin</span><code className="font-mono text-navy">admin / admin2026</code></div>
-              <div className="flex justify-between"><span className="text-slate-400">Kru</span><code className="font-mono text-navy">rian123 / crew2026</code></div>
-              <div className="flex justify-between"><span className="text-slate-400">Kru</span><code className="font-mono text-navy">fikri123 / crew2026</code></div>
-              <div className="flex justify-between"><span className="text-slate-400">Kru</span><code className="font-mono text-navy">doni123 / crew2026</code></div>
-              <p className="text-slate-400 pt-1">Password menentukan role &amp; akses menu.</p>
-            </div>
-          )}
+          <p className="mt-4 text-[10px] text-slate-400 text-center">
+            Peran (Owner / Admin / Kru) otomatis mengikuti akun Anda.
+          </p>
         </div>
 
         <p className="text-center text-[10px] text-white/30 mt-4">© {new Date().getFullYear()} BluDecor · Internal Use Only</p>

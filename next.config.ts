@@ -11,7 +11,8 @@ if (!process.env.NEXT_PUBLIC_BUILD_TIME) {
  * Image Architecture (v2.0 — Audit Cleanup)
  *
  * This project does NOT use next/image (<Image>) anywhere.
- * All 23 images use native <img> with direct Supabase CDN URLs.
+ * All images use native <img> with direct URLs (uploaded via /api/cms/upload
+ * dan disimpan di MongoDB Base64/Data URL, atau URL publik).
  * Vercel Image Optimization is therefore never triggered.
  *
  * The `images` config block has been removed — it was dead code.
